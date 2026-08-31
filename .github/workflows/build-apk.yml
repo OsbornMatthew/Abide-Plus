@@ -9,14 +9,18 @@ on:
 
 jobs:
   build-apk:
-    name: Build & Release Android APK
+    name: Build Android APK
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+      ORG_GRADLE_PROJECT_android.useAndroidX: "true"
+      ORG_GRADLE_PROJECT_android.enableJetifier: "true"
 
     steps:
       - name: ⬇️ Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
+      - name: 🟢 Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -28,38 +32,42 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 Setup Android SDK
+      - name: 📱 Setup Android SDK & Build Tools
         uses: android-actions/setup-android@v3
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Install Node Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: 🔨 Generate Android Native Project
+      - name: 🔨 Generate Android Native Project (Expo Prebuild)
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: 🔑 Make Gradlew Executable
+      - name: 🔑 Set Permissions for Gradlew
         run: chmod +x android/gradlew
 
-      - name: 🚀 Build Android APK
+      - name: 🚀 Compile Android APK via Gradle
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --max-workers=2 --stacktrace
 
       - name: 🔍 Locate Generated APK
         id: find-apk
         run: |
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: No APK file found in android/app/build/outputs/apk"
+            exit 1
+          fi
           echo "Found APK at: $APK_FILE"
           echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload APK Artifact to GitHub Actions
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Abide-Plus-Android-APK
           path: ${{ steps.find-apk.outputs.apk_path }}
           retention-days: 30
 
-      - name: 🌟 Create GitHub Release with APK
+      - name: 🌟 Publish GitHub Release with APK
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
@@ -69,15 +77,16 @@ jobs:
           body: |
             ## 📱 Abide+ Android App Download
 
-            🎉 Your Android APK is ready! Download and install `app-debug.apk` directly on your Android phone.
+            🎉 Your Android APK is ready! Download and install `app-debug.apk` directly on your Android device.
 
-            ### ✨ Included Features:
+            ### ✨ What's Inside:
             - 📖 Scripture Reader & Note Creator with Chapter Tracker
-            - 🕊️ A.C.T.S Prayer War Room & Praise Wall
+            - 🕊️ A.C.T.S Prayer War Room with Realtime Praise Wall
             - 💰 Monthly Expenses, 10% Storehouse Tithes, Savings & Auto Balance Carryover
             - 🎯 Everyday Disciplines (Read Bible Today & Prayer Today)
             - 🌓 Refined Light & Dark Themes with Soft Drop Shadows
-            - 🔒 Secure Google & Email/Password Authentication Gate
+            - 🔄 Seamless Realtime Cross-Device Sync (Firebase Firestore)
+            - 🔒 Google & Email/Password Authentication
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
