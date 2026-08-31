@@ -17,8 +17,12 @@ export const AuthService = {
     }
   },
 
-  async setActiveUser(user: UserProfile): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(user));
+  async setActiveUser(user: UserProfile | null): Promise<void> {
+    if (user) {
+      await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(user));
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
+    }
   },
 
   async getSavedUsers(): Promise<UserProfile[]> {
@@ -31,13 +35,28 @@ export const AuthService = {
     }
   },
 
-  async login(email: string, password?: string, displayName?: string): Promise<UserProfile> {
+  async saveUserToSavedList(user: UserProfile): Promise<UserProfile[]> {
     const saved = await this.getSavedUsers();
+    const cleanEmail = user.email.trim().toLowerCase();
+    const filtered = saved.filter((u) => u.email.toLowerCase() !== cleanEmail && u.id !== user.id);
+    const updatedList = [user, ...filtered];
+    await AsyncStorage.setItem(STORAGE_KEYS.SAVED_USERS, JSON.stringify(updatedList));
+    return updatedList;
+  },
+
+  async removeSavedUser(userId: string): Promise<UserProfile[]> {
+    const saved = await this.getSavedUsers();
+    const updatedList = saved.filter((u) => u.id !== userId);
+    await AsyncStorage.setItem(STORAGE_KEYS.SAVED_USERS, JSON.stringify(updatedList));
+    return updatedList;
+  },
+
+  async login(email: string, password?: string, displayName?: string): Promise<UserProfile> {
     const cleanEmail = email.trim().toLowerCase();
+    const saved = await this.getSavedUsers();
     let existing = saved.find((u) => u.email.toLowerCase() === cleanEmail);
 
     if (!existing) {
-      // Create new user profile upon registration
       const namePart = displayName || cleanEmail.split('@')[0];
       const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
       existing = {
@@ -48,15 +67,12 @@ export const AuthService = {
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       };
-      const updatedList = [...saved, existing];
-      await AsyncStorage.setItem(STORAGE_KEYS.SAVED_USERS, JSON.stringify(updatedList));
     } else {
       existing.lastLoginAt = new Date().toISOString();
       if (displayName) existing.displayName = displayName;
-      const updatedList = saved.map((u) => (u.id === existing!.id ? existing! : u));
-      await AsyncStorage.setItem(STORAGE_KEYS.SAVED_USERS, JSON.stringify(updatedList));
     }
 
+    await this.saveUserToSavedList(existing);
     await this.setActiveUser(existing);
     return existing;
   },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,13 +11,14 @@ import {
   Platform,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
-import { PrayerCategory } from '../../types/spiritual';
+import { PrayerCategory, PrayerItem } from '../../types/spiritual';
 import { X, Check, Heart, Shield, Flame, BookOpen } from 'lucide-react-native';
 import { spacing, borderRadius, typography } from '../../theme/spacing';
 
 interface AddPrayerModalProps {
   visible: boolean;
   onClose: () => void;
+  initialPrayer?: PrayerItem | null;
 }
 
 const PRAYER_CATEGORIES: { key: PrayerCategory; labelEn: string; labelTa: string }[] = [
@@ -33,8 +34,8 @@ const PRAYER_CATEGORIES: { key: PrayerCategory; labelEn: string; labelTa: string
   { key: 'Spiritual Growth', labelEn: 'Spiritual Growth', labelTa: 'ஆவிக்குரிய வளர்ச்சி' },
 ];
 
-export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose }) => {
-  const { theme, settings, addPrayer } = useApp();
+export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose, initialPrayer }) => {
+  const { theme, settings, addPrayer, updatePrayer } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [title, setTitle] = useState('');
@@ -43,21 +44,44 @@ export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose
   const [linkedVerse, setLinkedVerse] = useState('');
   const [priority, setPriority] = useState<'High' | 'Normal' | 'Urgent'>('Normal');
 
+  useEffect(() => {
+    if (initialPrayer) {
+      setTitle(initialPrayer.title);
+      setDetails(initialPrayer.details || '');
+      setCategory(initialPrayer.category);
+      setLinkedVerse(initialPrayer.linkedVerse || '');
+      setPriority(initialPrayer.priority || 'Normal');
+    } else {
+      setTitle('');
+      setDetails('');
+      setCategory('Supplication');
+      setLinkedVerse('');
+      setPriority('Normal');
+    }
+  }, [initialPrayer, visible]);
+
   const handleSubmit = async () => {
     if (!title.trim()) return;
 
-    await addPrayer({
-      title: title.trim(),
-      details: details.trim(),
-      category,
-      status: 'active',
-      linkedVerse: linkedVerse.trim() || undefined,
-      priority,
-    });
+    if (initialPrayer) {
+      await updatePrayer(initialPrayer.id, {
+        title: title.trim(),
+        details: details.trim(),
+        category,
+        linkedVerse: linkedVerse.trim() || undefined,
+        priority,
+      });
+    } else {
+      await addPrayer({
+        title: title.trim(),
+        details: details.trim(),
+        category,
+        status: 'active',
+        linkedVerse: linkedVerse.trim() || undefined,
+        priority,
+      });
+    }
 
-    setTitle('');
-    setDetails('');
-    setLinkedVerse('');
     onClose();
   };
 
@@ -73,7 +97,13 @@ export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Flame size={20} color={theme.primary} />
               <Text style={[styles.modalTitle, { color: theme.text }]}>
-                {isTamil ? 'புதிய ஜெபக் குறிப்பு' : 'New Prayer Request'}
+                {initialPrayer
+                  ? isTamil
+                    ? 'ஜெபக் குறிப்பை திருத்தவும்'
+                    : 'Edit Prayer Request'
+                  : isTamil
+                  ? 'புதிய ஜெபக் குறிப்பு'
+                  : 'New Prayer Request'}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardAlt }]}>
@@ -93,7 +123,7 @@ export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose
                 placeholderTextColor={theme.textMuted}
                 value={title}
                 onChangeText={setTitle}
-                autoFocus
+                autoFocus={!initialPrayer}
               />
             </View>
 
@@ -212,7 +242,13 @@ export const AddPrayerModal: React.FC<AddPrayerModalProps> = ({ visible, onClose
             >
               <Check size={18} color="#000" />
               <Text style={styles.submitBtnText}>
-                {isTamil ? 'ஜெபத்தை சமர்ப்பிக்கவும்' : 'Add to Prayer Wall'}
+                {initialPrayer
+                  ? isTamil
+                    ? 'மாற்றங்களை சேமிக்கவும்'
+                    : 'Save Changes'
+                  : isTamil
+                  ? 'ஜெபத்தை சமர்ப்பிக்கவும்'
+                  : 'Add to Prayer Wall'}
               </Text>
             </TouchableOpacity>
           </ScrollView>

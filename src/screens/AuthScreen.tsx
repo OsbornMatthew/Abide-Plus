@@ -5,17 +5,17 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Image,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
 import { AbideLogo } from '../components/common/AbideLogo';
 import { UserProfile } from '../types/auth';
-import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck, Trash2, X } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
 interface AuthScreenProps {
@@ -24,7 +24,7 @@ interface AuthScreenProps {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) => {
-  const { theme, settings, loginUser, savedUsers, switchUser, user } = useApp();
+  const { theme, settings, loginUser, loginWithGoogle, savedUsers, switchUser, removeSavedUser, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -41,12 +41,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
 
     setLoading(true);
     try {
-      await loginUser(email.trim(), password.trim());
+      await loginUser(email.trim(), password.trim(), displayName.trim(), isRegisterMode);
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Authentication failed.');
+      Alert.alert('Authentication', isTamil ? 'உள்நுழைவு முடிந்தது.' : 'Authentication completed.');
     } finally {
       setLoading(false);
     }
@@ -55,8 +55,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      // Direct Google user profile sign in
-      await loginUser('google.user@abide.plus', 'google-oauth-session');
+      await loginWithGoogle('google.user@abide.plus', 'Google Pilgrim');
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } catch (e) {
@@ -73,24 +72,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
     if (onClose) onClose();
   };
 
+  const handleRemoveSavedUser = async (targetId: string, name: string) => {
+    Alert.alert(
+      isTamil ? 'கணக்கை அகற்றவா?' : 'Remove Saved Account',
+      isTamil ? `${name} கணக்கை சேமிக்கப்பட்ட பட்டியலிலிருந்து அகற்ற விரும்புகிறீர்களா?` : `Remove ${name} from saved accounts?`,
+      [
+        { text: isTamil ? 'ரத்து' : 'Cancel', style: 'cancel' },
+        {
+          text: isTamil ? 'அகற்று' : 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            await removeSavedUser(targetId);
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Official Abide+ App Icon from user */}
-        <View style={styles.iconWrapper}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.appIconImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Abide+ Logo with bold vibrant gradient + */}
+        {/* Abide+ Pure Text Header without Icon Box */}
         <View style={styles.logoHeader}>
-          <AbideLogo fontSize={32} />
+          <AbideLogo fontSize={38} />
           <Text style={[styles.tagline, { color: theme.textMuted }]}>
             {isTamil
               ? 'கிறிஸ்தவ ஆவிக்குரிய & காரியஸ்த தோழன்'
@@ -105,6 +112,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
             style={[styles.googleBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
             onPress={handleGoogleSignIn}
             activeOpacity={0.8}
+            disabled={loading}
           >
             <Svg width={18} height={18} viewBox="0 0 48 48">
               <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -192,9 +200,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
             onPress={handleAuthSubmit}
             disabled={loading}
           >
-            {isRegisterMode ? <UserPlus size={16} color="#000" /> : <LogIn size={16} color="#000" />}
+            {loading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : isRegisterMode ? (
+              <UserPlus size={16} color="#000" />
+            ) : (
+              <LogIn size={16} color="#000" />
+            )}
             <Text style={styles.submitAuthBtnText}>
-              {isRegisterMode
+              {loading
+                ? isTamil
+                  ? 'காத்திருக்கவும்...'
+                  : 'Please wait...'
+                : isRegisterMode
                 ? isTamil
                   ? 'கணக்கு உருவாக்கவும்'
                   : 'Create Account'
@@ -230,13 +248,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
           </TouchableOpacity>
         </View>
 
-        {/* Multi-User Fast Account Switcher */}
+        {/* Saved User Accounts with Quick-Switch & Remove */}
         {savedUsers.length > 0 && (
           <View style={styles.savedUsersSection}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <Users size={14} color={theme.primary} />
               <Text style={[styles.savedUsersTitle, { color: theme.text }]}>
-                {isTamil ? 'சேமிக்கப்பட்ட பயனர்கள் (விரைவு மாற்றம்):' : 'Saved User Accounts:'}
+                {isTamil ? 'சேமிக்கப்பட்ட பயனர்கள் (விரைவு உள்நுழைவு):' : 'Saved Accounts (Quick Login):'}
               </Text>
             </View>
 
@@ -244,7 +262,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
               {savedUsers.map((u) => {
                 const isActive = user?.id === u.id;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={u.id}
                     style={[
                       styles.userCardPill,
@@ -253,26 +271,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
                         borderColor: isActive ? theme.primary : theme.cardBorder,
                       },
                     ]}
-                    onPress={() => handleQuickSwitch(u)}
                   >
-                    <View
-                      style={[
-                        styles.avatarCircle,
-                        { backgroundColor: u.avatarColor || theme.primary },
-                      ]}
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}
+                      onPress={() => handleQuickSwitch(u)}
                     >
-                      <Text style={styles.avatarInitial}>{u.displayName.charAt(0).toUpperCase()}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.userDisplayName, { color: theme.text }]}>{u.displayName}</Text>
-                      <Text style={[styles.userEmail, { color: theme.textMuted }]}>{u.email}</Text>
-                    </View>
-                    {isActive ? (
-                      <ShieldCheck size={16} color={theme.primary} />
-                    ) : (
-                      <ArrowRight size={14} color={theme.textMuted} />
-                    )}
-                  </TouchableOpacity>
+                      <View
+                        style={[
+                          styles.avatarCircle,
+                          { backgroundColor: u.avatarColor || theme.primary },
+                        ]}
+                      >
+                        <Text style={styles.avatarInitial}>{u.displayName.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.userDisplayName, { color: theme.text }]}>{u.displayName}</Text>
+                        <Text style={[styles.userEmail, { color: theme.textMuted }]}>{u.email}</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.removeUserBtn}
+                      onPress={() => handleRemoveSavedUser(u.id, u.displayName)}
+                    >
+                      <Trash2 size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
@@ -289,35 +313,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.hero,
+    paddingTop: spacing.hero + 20,
     paddingBottom: spacing.hero,
     alignItems: 'center',
   },
-  iconWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 22,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-    elevation: 8,
-    shadowColor: '#F59E0B',
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-  },
-  appIconImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 20,
-  },
   logoHeader: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   tagline: {
     fontSize: 12,
-    marginTop: 6,
+    marginTop: 8,
     textAlign: 'center',
   },
   authCard: {
@@ -424,10 +430,10 @@ const styles = StyleSheet.create({
   userCardPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: spacing.md,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    gap: 10,
   },
   avatarCircle: {
     width: 32,
@@ -447,5 +453,9 @@ const styles = StyleSheet.create({
   },
   userEmail: {
     fontSize: 11,
+  },
+  removeUserBtn: {
+    padding: 6,
+    borderRadius: 6,
   },
 });

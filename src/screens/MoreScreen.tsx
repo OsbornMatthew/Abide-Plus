@@ -31,6 +31,7 @@ import {
   Sun,
   Calendar,
   Clock,
+  Edit2,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -47,9 +48,11 @@ export const MoreScreen: React.FC = () => {
     stopFast,
     sermons,
     addSermon,
+    updateSermon,
     deleteSermon,
     memoryVerses,
     addMemoryVerse,
+    updateMemoryVerse,
     toggleMemoryVerse,
     deleteMemoryVerse,
     exportBackupData,
@@ -68,6 +71,7 @@ export const MoreScreen: React.FC = () => {
 
   // Sermon modal
   const [showAddSermonModal, setShowAddSermonModal] = useState(false);
+  const [editingSermon, setEditingSermon] = useState<SermonNote | null>(null);
   const [sermonTitle, setSermonTitle] = useState('');
   const [sermonPreacher, setSermonPreacher] = useState('');
   const [sermonPassage, setSermonPassage] = useState('');
@@ -76,6 +80,7 @@ export const MoreScreen: React.FC = () => {
 
   // Memory modal
   const [showAddMemoryModal, setShowAddMemoryModal] = useState(false);
+  const [editingMemory, setEditingMemory] = useState<ScriptureMemoryCard | null>(null);
   const [memRefEn, setMemRefEn] = useState('');
   const [memRefTa, setMemRefTa] = useState('');
   const [memTextEn, setMemTextEn] = useState('');
@@ -91,17 +96,50 @@ export const MoreScreen: React.FC = () => {
     setShowStartFastModal(false);
   };
 
+  const handleOpenEditSermon = (sermon: SermonNote) => {
+    setEditingSermon(sermon);
+    setSermonTitle(sermon.title);
+    setSermonPreacher(sermon.preacher);
+    setSermonPassage(sermon.scripturePassage);
+    setSermonNotes(sermon.notes);
+    setSermonTakeaway(sermon.keyTakeaways?.[0] || '');
+    setShowAddSermonModal(true);
+  };
+
+  const handleOpenNewSermon = () => {
+    setEditingSermon(null);
+    setSermonTitle('');
+    setSermonPreacher('');
+    setSermonPassage('');
+    setSermonNotes('');
+    setSermonTakeaway('');
+    setShowAddSermonModal(true);
+  };
+
   const handleAddSermonSubmit = async () => {
     if (!sermonTitle.trim()) return;
-    await addSermon({
-      title: sermonTitle.trim(),
-      preacher: sermonPreacher.trim() || 'Pastor',
-      date: new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-      scripturePassage: sermonPassage.trim() || 'Scripture',
-      notes: sermonNotes.trim(),
-      keyTakeaways: sermonTakeaway.trim() ? [sermonTakeaway.trim()] : [],
-      actionItems: [],
-    });
+
+    if (editingSermon) {
+      await updateSermon(editingSermon.id, {
+        title: sermonTitle.trim(),
+        preacher: sermonPreacher.trim() || 'Pastor',
+        scripturePassage: sermonPassage.trim() || 'Scripture',
+        notes: sermonNotes.trim(),
+        keyTakeaways: sermonTakeaway.trim() ? [sermonTakeaway.trim()] : [],
+      });
+    } else {
+      await addSermon({
+        title: sermonTitle.trim(),
+        preacher: sermonPreacher.trim() || 'Pastor',
+        date: new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+        scripturePassage: sermonPassage.trim() || 'Scripture',
+        notes: sermonNotes.trim(),
+        keyTakeaways: sermonTakeaway.trim() ? [sermonTakeaway.trim()] : [],
+        actionItems: [],
+      });
+    }
+
+    setEditingSermon(null);
     setSermonTitle('');
     setSermonPreacher('');
     setSermonPassage('');
@@ -110,15 +148,45 @@ export const MoreScreen: React.FC = () => {
     setShowAddSermonModal(false);
   };
 
+  const handleOpenEditMemory = (card: ScriptureMemoryCard) => {
+    setEditingMemory(card);
+    setMemRefEn(card.verseRefEn);
+    setMemRefTa(card.verseRefTa);
+    setMemTextEn(card.textEn);
+    setMemTextTa(card.textTa);
+    setShowAddMemoryModal(true);
+  };
+
+  const handleOpenNewMemory = () => {
+    setEditingMemory(null);
+    setMemRefEn('');
+    setMemRefTa('');
+    setMemTextEn('');
+    setMemTextTa('');
+    setShowAddMemoryModal(true);
+  };
+
   const handleAddMemorySubmit = async () => {
     if (!memRefEn.trim() || !memTextEn.trim()) return;
-    await addMemoryVerse({
-      verseRefEn: memRefEn.trim(),
-      verseRefTa: memRefTa.trim() || memRefEn.trim(),
-      textEn: memTextEn.trim(),
-      textTa: memTextTa.trim() || memTextEn.trim(),
-      isMemorized: false,
-    });
+
+    if (editingMemory) {
+      await updateMemoryVerse(editingMemory.id, {
+        verseRefEn: memRefEn.trim(),
+        verseRefTa: memRefTa.trim() || memRefEn.trim(),
+        textEn: memTextEn.trim(),
+        textTa: memTextTa.trim() || memTextEn.trim(),
+      });
+    } else {
+      await addMemoryVerse({
+        verseRefEn: memRefEn.trim(),
+        verseRefTa: memRefTa.trim() || memRefEn.trim(),
+        textEn: memTextEn.trim(),
+        textTa: memTextTa.trim() || memTextEn.trim(),
+        isMemorized: false,
+      });
+    }
+
+    setEditingMemory(null);
     setMemRefEn('');
     setMemRefTa('');
     setMemTextEn('');
@@ -340,7 +408,7 @@ export const MoreScreen: React.FC = () => {
           <View style={styles.sectionContainer}>
             <TouchableOpacity
               style={[styles.addCtaBtn, { backgroundColor: theme.primary }, theme.cardShadow]}
-              onPress={() => setShowAddSermonModal(true)}
+              onPress={handleOpenNewSermon}
             >
               <Plus size={16} color="#000" />
               <Text style={styles.addCtaBtnText}>
@@ -362,9 +430,14 @@ export const MoreScreen: React.FC = () => {
                       </Text>
                       <Text style={[styles.sermonDate, { color: theme.textMuted }]}>{sermon.date}</Text>
                     </View>
-                    <TouchableOpacity onPress={() => deleteSermon(sermon.id)}>
-                      <Trash2 size={14} color={theme.textMuted} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TouchableOpacity onPress={() => handleOpenEditSermon(sermon)}>
+                        <Edit2 size={14} color={theme.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteSermon(sermon.id)}>
+                        <Trash2 size={14} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   <Text style={[styles.sermonBody, { color: theme.text }]}>{sermon.notes}</Text>
@@ -392,7 +465,7 @@ export const MoreScreen: React.FC = () => {
           <View style={styles.sectionContainer}>
             <TouchableOpacity
               style={[styles.addCtaBtn, { backgroundColor: theme.primary }, theme.cardShadow]}
-              onPress={() => setShowAddMemoryModal(true)}
+              onPress={handleOpenNewMemory}
             >
               <Plus size={16} color="#000" />
               <Text style={styles.addCtaBtnText}>
@@ -422,9 +495,14 @@ export const MoreScreen: React.FC = () => {
                         {card.verseRefEn}
                       </Text>
                     </View>
-                    <TouchableOpacity onPress={() => deleteMemoryVerse(card.id)}>
-                      <Trash2 size={14} color={theme.textMuted} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TouchableOpacity onPress={() => handleOpenEditMemory(card)}>
+                        <Edit2 size={14} color={theme.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteMemoryVerse(card.id)}>
+                        <Trash2 size={14} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   <Text style={[styles.memoryTextTamil, { color: theme.text }]}>
@@ -649,15 +727,34 @@ export const MoreScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Add Sermon Modal */}
-      <Modal visible={showAddSermonModal} animationType="slide" transparent onRequestClose={() => setShowAddSermonModal(false)}>
+      {/* Add/Edit Sermon Modal */}
+      <Modal
+        visible={showAddSermonModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {
+          setShowAddSermonModal(false);
+          setEditingSermon(null);
+        }}
+      >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>
-                {isTamil ? 'பிரசங்கக் குறிப்பு' : 'Sermon Note'}
+                {editingSermon
+                  ? isTamil
+                    ? 'பிரசங்கக் குறிப்பை திருத்த'
+                    : 'Edit Sermon Note'
+                  : isTamil
+                  ? 'பிரசங்கக் குறிப்பு'
+                  : 'Sermon Note'}
               </Text>
-              <TouchableOpacity onPress={() => setShowAddSermonModal(false)}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddSermonModal(false);
+                  setEditingSermon(null);
+                }}
+              >
                 <X size={16} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -692,24 +789,58 @@ export const MoreScreen: React.FC = () => {
               value={sermonNotes}
               onChangeText={setSermonNotes}
             />
+            <TextInput
+              style={[styles.textInput, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
+              placeholder={isTamil ? 'முக்கிய போதனை / Takeaway' : 'Key Takeaway'}
+              placeholderTextColor={theme.textMuted}
+              value={sermonTakeaway}
+              onChangeText={setSermonTakeaway}
+            />
 
             <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: theme.primary }]} onPress={handleAddSermonSubmit}>
               <Check size={16} color="#000" />
-              <Text style={styles.confirmBtnText}>{isTamil ? 'சேமிக்க' : 'Save'}</Text>
+              <Text style={styles.confirmBtnText}>
+                {editingSermon
+                  ? isTamil
+                    ? 'மாற்றங்களை சேமிக்க'
+                    : 'Update Sermon'
+                  : isTamil
+                  ? 'சேமிக்க'
+                  : 'Save'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* Add Memory Verse Modal */}
-      <Modal visible={showAddMemoryModal} animationType="slide" transparent onRequestClose={() => setShowAddMemoryModal(false)}>
+      {/* Add/Edit Memory Verse Modal */}
+      <Modal
+        visible={showAddMemoryModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => {
+          setShowAddMemoryModal(false);
+          setEditingMemory(null);
+        }}
+      >
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>
-                {isTamil ? 'மனன வசனம்' : 'Memory Card'}
+                {editingMemory
+                  ? isTamil
+                    ? 'மனன வசனத்தை திருத்த'
+                    : 'Edit Memory Card'
+                  : isTamil
+                  ? 'மனன வசனம்'
+                  : 'Memory Card'}
               </Text>
-              <TouchableOpacity onPress={() => setShowAddMemoryModal(false)}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddMemoryModal(false);
+                  setEditingMemory(null);
+                }}
+              >
                 <X size={16} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -747,7 +878,15 @@ export const MoreScreen: React.FC = () => {
 
             <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: theme.primary }]} onPress={handleAddMemorySubmit}>
               <Check size={16} color="#000" />
-              <Text style={styles.confirmBtnText}>{isTamil ? 'சேமிக்க' : 'Save'}</Text>
+              <Text style={styles.confirmBtnText}>
+                {editingMemory
+                  ? isTamil
+                    ? 'மாற்றங்களை சேமிக்க'
+                    : 'Update Memory'
+                  : isTamil
+                  ? 'சேமிக்க'
+                  : 'Save'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -21,6 +21,7 @@ import { TodoTask } from '../types/todo';
 import { UserProfile } from '../types/auth';
 import { AppSettings, DEFAULT_SETTINGS, StorageService } from '../services/storage';
 import { AuthService } from '../services/authStorage';
+import { FirebaseSyncService, UserCloudData } from '../services/firebase';
 import { darkTheme, lightTheme, ColorPalette } from '../theme/colors';
 import { DAILY_VERSES } from '../data/dailyVerses';
 
@@ -28,9 +29,11 @@ interface AppContextType {
   // Auth & User
   user: UserProfile | null;
   savedUsers: UserProfile[];
-  loginUser: (email: string, pass: string) => Promise<void>;
+  loginUser: (email: string, pass: string, displayName?: string, isRegister?: boolean) => Promise<void>;
+  loginWithGoogle: (email?: string, name?: string) => Promise<void>;
   logoutUser: () => Promise<void>;
   switchUser: (user: UserProfile) => Promise<void>;
+  removeSavedUser: (userId: string) => Promise<void>;
 
   // Settings & Theme
   settings: AppSettings;
@@ -62,7 +65,7 @@ interface AppContextType {
   // Verse Notes & Reflections
   verseNotes: VerseNote[];
   addVerseNote: (note: Omit<VerseNote, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateVerseNote: (id: string, noteText: string, colorHighlight?: string) => Promise<void>;
+  updateVerseNote: (id: string, updates: Partial<VerseNote>) => Promise<void>;
   deleteVerseNote: (id: string) => Promise<void>;
 
   // Prayer Journal
@@ -105,10 +108,12 @@ interface AppContextType {
   // Sermons & Memory Verses
   sermons: SermonNote[];
   addSermon: (sermon: Omit<SermonNote, 'id'>) => Promise<void>;
+  updateSermon: (id: string, updates: Partial<SermonNote>) => Promise<void>;
   deleteSermon: (id: string) => Promise<void>;
 
   memoryVerses: ScriptureMemoryCard[];
   addMemoryVerse: (card: Omit<ScriptureMemoryCard, 'id' | 'reviewStreak'>) => Promise<void>;
+  updateMemoryVerse: (id: string, updates: Partial<ScriptureMemoryCard>) => Promise<void>;
   toggleMemoryVerse: (id: string) => Promise<void>;
   deleteMemoryVerse: (id: string) => Promise<void>;
 
@@ -256,8 +261,92 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadData();
   }, []);
 
-  const loginUser = async (email: string, pass: string) => {
-    const loggedIn = await AuthService.login(email, pass);
+  // Seamless Realtime Firestore Cross-Device Sync Listener
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Load initial cloud data on login
+    FirebaseSyncService.loadUserData(user.id).then((cloud) => {
+      if (cloud) {
+        if (cloud.prayers && Array.isArray(cloud.prayers)) {
+          setPrayers(cloud.prayers);
+          StorageService.savePrayers(cloud.prayers);
+        }
+        if (cloud.transactions && Array.isArray(cloud.transactions)) {
+          setTransactions(cloud.transactions);
+          StorageService.saveTransactions(cloud.transactions);
+        }
+        if (cloud.todos && Array.isArray(cloud.todos)) {
+          setTodos(cloud.todos);
+          StorageService.saveTodos(cloud.todos);
+        }
+        if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
+          setVerseNotes(cloud.verseNotes);
+          StorageService.saveVerseNotes(cloud.verseNotes);
+        }
+        if (cloud.sermons && Array.isArray(cloud.sermons)) {
+          setSermons(cloud.sermons);
+          StorageService.saveSermons(cloud.sermons);
+        }
+        if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
+          setMemoryVerses(cloud.memoryVerses);
+          StorageService.saveMemoryVerses(cloud.memoryVerses);
+        }
+        if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
+          setFastingRecords(cloud.fastingRecords);
+          StorageService.saveFastingRecords(cloud.fastingRecords);
+        }
+        if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
+          setBibleBooks(cloud.bibleBooks);
+          StorageService.saveBibleBooks(cloud.bibleBooks);
+        }
+      }
+    });
+
+    // Subscribe to realtime changes across devices
+    const unsubscribe = FirebaseSyncService.subscribeToUserData(user.id, (cloud) => {
+      if (!cloud) return;
+      if (cloud.prayers) setPrayers(cloud.prayers);
+      if (cloud.transactions) setTransactions(cloud.transactions);
+      if (cloud.todos) setTodos(cloud.todos);
+      if (cloud.verseNotes) setVerseNotes(cloud.verseNotes);
+      if (cloud.sermons) setSermons(cloud.sermons);
+      if (cloud.memoryVerses) setMemoryVerses(cloud.memoryVerses);
+      if (cloud.fastingRecords) setFastingRecords(cloud.fastingRecords);
+      if (cloud.bibleBooks) setBibleBooks(cloud.bibleBooks);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.id]);
+
+  const syncUserCloud = async (updates: Partial<UserCloudData>) => {
+    if (user?.id) {
+      await FirebaseSyncService.syncUserData(user.id, updates);
+    }
+  };
+
+  const loginUser = async (email: string, pass: string, displayName?: string, isRegister?: boolean) => {
+    let loggedIn: UserProfile;
+    if (isRegister) {
+      loggedIn = await FirebaseSyncService.registerUser(email, pass, displayName);
+    } else {
+      loggedIn = await FirebaseSyncService.loginUser(email, pass);
+    }
+
+    await AuthService.saveUserToSavedList(loggedIn);
+    await AuthService.setActiveUser(loggedIn);
+    setUser(loggedIn);
+    const updatedUsers = await AuthService.getSavedUsers();
+    setSavedUsers(updatedUsers);
+    await updateSettings({ userName: loggedIn.displayName });
+  };
+
+  const loginWithGoogle = async (email?: string, name?: string) => {
+    const loggedIn = await FirebaseSyncService.loginWithGoogle(email, name);
+    await AuthService.saveUserToSavedList(loggedIn);
+    await AuthService.setActiveUser(loggedIn);
     setUser(loggedIn);
     const updatedUsers = await AuthService.getSavedUsers();
     setSavedUsers(updatedUsers);
@@ -273,6 +362,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await AuthService.setActiveUser(targetUser);
     setUser(targetUser);
     await updateSettings({ userName: targetUser.displayName });
+  };
+
+  const removeSavedUser = async (userId: string) => {
+    const updated = await AuthService.removeSavedUser(userId);
+    setSavedUsers(updated);
+    if (user?.id === userId) {
+      await AuthService.logout();
+      setUser(null);
+    }
   };
 
   const theme: ColorPalette = settings.isDarkMode ? darkTheme : lightTheme;
@@ -397,13 +495,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await StorageService.saveVerseNotes(updated);
   };
 
-  const updateVerseNote = async (id: string, noteText: string, colorHighlight?: string) => {
+  const updateVerseNote = async (id: string, updates: Partial<VerseNote>) => {
     const updated = verseNotes.map((n) =>
       n.id === id
         ? {
             ...n,
-            noteText,
-            colorHighlight: colorHighlight || n.colorHighlight,
+            ...updates,
             updatedAt: new Date().toISOString(),
           }
         : n
@@ -594,6 +691,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await StorageService.saveSermons(updated);
   };
 
+  const updateSermon = async (id: string, updates: Partial<SermonNote>) => {
+    const updated = sermons.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    setSermons(updated);
+    await StorageService.saveSermons(updated);
+  };
+
   const deleteSermon = async (id: string) => {
     const updated = sermons.filter((s) => s.id !== id);
     setSermons(updated);
@@ -607,6 +710,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       reviewStreak: 0,
     };
     const updated = [newCard, ...memoryVerses];
+    setMemoryVerses(updated);
+    await StorageService.saveMemoryVerses(updated);
+  };
+
+  const updateMemoryVerse = async (id: string, updates: Partial<ScriptureMemoryCard>) => {
+    const updated = memoryVerses.map((m) => (m.id === id ? { ...m, ...updates } : m));
     setMemoryVerses(updated);
     await StorageService.saveMemoryVerses(updated);
   };
@@ -718,8 +827,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         user,
         savedUsers,
         loginUser,
+        loginWithGoogle,
         logoutUser,
         switchUser,
+        removeSavedUser,
         settings,
         theme,
         updateSettings,
@@ -758,9 +869,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dailyTaskStats,
         sermons,
         addSermon,
+        updateSermon,
         deleteSermon,
         memoryVerses,
         addMemoryVerse,
+        updateMemoryVerse,
         toggleMemoryVerse,
         deleteMemoryVerse,
         activeFast,

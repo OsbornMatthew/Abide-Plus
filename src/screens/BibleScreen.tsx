@@ -57,12 +57,31 @@ export const BibleScreen: React.FC = () => {
   const [readerVisible, setReaderVisible] = useState(false);
   const [readerInitialChapter, setReaderInitialChapter] = useState(1);
 
-  // Standalone Add Note Modal from Notes tab
+  // Standalone Add/Edit Note Modal from Notes tab
   const [showGlobalNoteModal, setShowGlobalNoteModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<VerseNote | null>(null);
   const [manualReferenceInput, setManualReferenceInput] = useState('Genesis 1:1');
   const [manualVerseText, setManualVerseText] = useState('');
   const [noteBody, setNoteBody] = useState('');
   const [noteHighlightColor, setNoteHighlightColor] = useState('#F59E0B');
+
+  const handleOpenEditNote = (note: VerseNote) => {
+    setEditingNote(note);
+    setManualReferenceInput(note.verseRefEn || note.verseRefTa || 'Genesis 1:1');
+    setManualVerseText(note.verseText || '');
+    setNoteBody(note.noteText || '');
+    setNoteHighlightColor(note.colorHighlight || '#F59E0B');
+    setShowGlobalNoteModal(true);
+  };
+
+  const handleOpenNewNote = () => {
+    setEditingNote(null);
+    setManualReferenceInput('Genesis 1:1');
+    setManualVerseText('');
+    setNoteBody('');
+    setNoteHighlightColor('#F59E0B');
+    setShowGlobalNoteModal(true);
+  };
 
   // Filter books
   const filteredBooks = bibleBooks.filter((b) => {
@@ -115,16 +134,29 @@ export const BibleScreen: React.FC = () => {
       if (!isNaN(ch) && ch > 0) chapterNum = ch;
     }
 
-    await addVerseNote({
-      bookId: matchedBookId,
-      chapter: chapterNum,
-      verseRefEn: refEn,
-      verseRefTa: refEn,
-      verseText: manualVerseText.trim(),
-      noteText: noteBody.trim(),
-      colorHighlight: noteHighlightColor,
-    });
+    if (editingNote) {
+      await updateVerseNote(editingNote.id, {
+        bookId: matchedBookId,
+        chapter: chapterNum,
+        verseRefEn: refEn,
+        verseRefTa: refEn,
+        verseText: manualVerseText.trim(),
+        noteText: noteBody.trim(),
+        colorHighlight: noteHighlightColor,
+      });
+    } else {
+      await addVerseNote({
+        bookId: matchedBookId,
+        chapter: chapterNum,
+        verseRefEn: refEn,
+        verseRefTa: refEn,
+        verseText: manualVerseText.trim(),
+        noteText: noteBody.trim(),
+        colorHighlight: noteHighlightColor,
+      });
+    }
 
+    setEditingNote(null);
     setManualVerseText('');
     setNoteBody('');
     setShowGlobalNoteModal(false);
@@ -408,7 +440,7 @@ export const BibleScreen: React.FC = () => {
             {/* Single '+' Action button */}
             <TouchableOpacity
               style={[styles.addNoteMainCta, { backgroundColor: theme.primary }, theme.cardShadow]}
-              onPress={() => setShowGlobalNoteModal(true)}
+              onPress={handleOpenNewNote}
             >
               <Plus size={16} color="#000" />
               <Text style={styles.addNoteMainCtaText}>
@@ -446,9 +478,14 @@ export const BibleScreen: React.FC = () => {
                         </Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity onPress={() => deleteVerseNote(note.id)}>
-                        <Trash2 size={14} color={theme.textMuted} />
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <TouchableOpacity onPress={() => handleOpenEditNote(note)}>
+                          <Edit3 size={15} color={theme.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => deleteVerseNote(note.id)}>
+                          <Trash2 size={14} color={theme.textMuted} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
                     {note.verseText ? (
@@ -479,20 +516,34 @@ export const BibleScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* GLOBAL ADD VERSE NOTE MODAL - MANUAL REFERENCE INPUT */}
+      {/* GLOBAL ADD/EDIT VERSE NOTE MODAL */}
       <Modal
         visible={showGlobalNoteModal}
         animationType="slide"
         transparent
-        onRequestClose={() => setShowGlobalNoteModal(false)}
+        onRequestClose={() => {
+          setShowGlobalNoteModal(false);
+          setEditingNote(null);
+        }}
       >
         <View style={styles.chapterModalBackdrop}>
           <View style={[styles.chapterModalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.chapterModalHeader}>
               <Text style={[styles.chapterModalBookName, { color: theme.text }]}>
-                {isTamil ? 'வசனக் குறிப்பு எழுதுக' : 'Add Scripture Verse & Note'}
+                {editingNote
+                  ? isTamil
+                    ? 'குறிப்பைத் திருத்துக'
+                    : 'Edit Scripture Note'
+                  : isTamil
+                  ? 'வசனக் குறிப்பு எழுதுக'
+                  : 'Add Scripture Verse & Note'}
               </Text>
-              <TouchableOpacity onPress={() => setShowGlobalNoteModal(false)}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowGlobalNoteModal(false);
+                  setEditingNote(null);
+                }}
+              >
                 <X size={18} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -508,7 +559,7 @@ export const BibleScreen: React.FC = () => {
                 onChangeText={setManualReferenceInput}
                 placeholder="e.g. Genesis 1:1 or Genesis 1:30"
                 placeholderTextColor={theme.textMuted}
-                autoFocus
+                autoFocus={!editingNote}
               />
 
               {/* Optional Scripture Verse Text */}
@@ -559,7 +610,15 @@ export const BibleScreen: React.FC = () => {
 
               <TouchableOpacity style={[styles.saveGlobalNoteBtn, { backgroundColor: theme.primary }]} onPress={handleGlobalNoteSubmit}>
                 <Check size={16} color="#000" />
-                <Text style={styles.saveGlobalNoteBtnText}>{isTamil ? 'சேமிக்க' : 'Save Note'}</Text>
+                <Text style={styles.saveGlobalNoteBtnText}>
+                  {editingNote
+                    ? isTamil
+                      ? 'மாற்றங்களைச் சேமிக்க'
+                      : 'Update Note'
+                    : isTamil
+                    ? 'சேமிக்க'
+                    : 'Save Note'}
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </View>

@@ -125,7 +125,13 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
     const refTa = isTamil ? `${book.nameTa} ${currentChapter}` : refEn;
 
     if (editingNoteId) {
-      await updateVerseNote(editingNoteId, manualNoteInput.trim(), selectedHighlightColor);
+      await updateVerseNote(editingNoteId, {
+        noteText: manualNoteInput.trim(),
+        colorHighlight: selectedHighlightColor,
+        verseRefEn: refEn,
+        verseRefTa: refTa,
+        verseText: manualVerseTextInput.trim(),
+      });
     } else {
       await addVerseNote({
         bookId: book.id,

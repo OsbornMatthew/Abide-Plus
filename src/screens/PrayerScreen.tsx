@@ -25,6 +25,7 @@ import {
   Check,
   X,
   Calendar,
+  Edit2,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -35,6 +36,7 @@ export const PrayerScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'answered' | 'waiting'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPrayer, setEditingPrayer] = useState<PrayerItem | null>(null);
   const [showTimerModal, setShowTimerModal] = useState(false);
 
   // Testimony modal for answered prayer
@@ -257,7 +259,19 @@ export const PrayerScreen: React.FC = () => {
                           <Text style={styles.priorityBadgeText}>{prayer.priority}</Text>
                         </View>
                       )}
-                      <TouchableOpacity onPress={() => deletePrayer(prayer.id)}>
+                      <TouchableOpacity
+                        style={styles.iconActionBtn}
+                        onPress={() => {
+                          setEditingPrayer(prayer);
+                          setShowAddModal(true);
+                        }}
+                      >
+                        <Edit2 size={14} color={theme.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.iconActionBtn}
+                        onPress={() => deletePrayer(prayer.id)}
+                      >
                         <Trash2 size={14} color={theme.textMuted} />
                       </TouchableOpacity>
                     </View>
@@ -356,7 +370,14 @@ export const PrayerScreen: React.FC = () => {
       </Modal>
 
       {/* Modals */}
-      <AddPrayerModal visible={showAddModal} onClose={() => setShowAddModal(false)} />
+      <AddPrayerModal
+        visible={showAddModal}
+        initialPrayer={editingPrayer}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingPrayer(null);
+        }}
+      />
       <PrayerTimerModal visible={showTimerModal} onClose={() => setShowTimerModal(false)} />
     </View>
   );
@@ -508,7 +529,11 @@ const styles = StyleSheet.create({
   headerRightControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  iconActionBtn: {
+    padding: 4,
+    borderRadius: 4,
   },
   priorityBadge: {
     paddingHorizontal: 5,
