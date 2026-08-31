@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build-apk:
-    name: 📱 Build Android APK
+    name: 📱 Build Standalone Android APK
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
@@ -30,41 +30,31 @@ jobs:
         with:
           node-version: 20
 
-      - name: ☕ Setup Java JDK 17
+      - name: ☕ Setup Java JDK 17 with Gradle Cache
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: 📜 Setup Android SDK Licenses
+      - name: 📜 Accept Android SDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
           echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1" > "$ANDROID_HOME/licenses/android-sdk-license"
           echo -e "84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: 📦 Install NPM Dependencies
+      - name: 📦 Install Node Modules
         run: npm install --legacy-peer-deps
-
-      - name: 🔨 Generate Android Native Project (Expo Prebuild)
-        run: npx expo prebuild --platform android --clean --no-install
-
-      - name: ⚙️ Enforce CI Gradle Properties
-        run: |
-          echo "reactNativeArchitectures=arm64-v8a,armeabi-v7a" >> android/gradle.properties
-          echo "org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m" >> android/gradle.properties
-          echo "org.gradle.parallel=false" >> android/gradle.properties
-          echo "org.gradle.daemon=false" >> android/gradle.properties
-          echo "newArchEnabled=false" >> android/gradle.properties
 
       - name: 🔑 Set Permissions for Gradlew
         run: chmod +x android/gradlew
 
-      - name: 🚀 Compile Standalone Android APK
+      - name: 🚀 Compile Standalone APK via Gradle
         run: |
           cd android
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace || ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace
 
-      - name: 🔍 Locate & Prepare Generated APK
+      - name: 🔍 Locate Generated APK
         id: find-apk
         run: |
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
@@ -76,7 +66,7 @@ jobs:
           cp "$APK_FILE" ./Abide-Plus.apk
           echo "apk_path=./Abide-Plus.apk" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload APK Artifact to GitHub Actions
+      - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Abide-Plus-Android-APK
@@ -95,7 +85,7 @@ jobs:
 
             🎉 Your Android APK is ready! Download and install `Abide-Plus.apk` directly on your Android phone.
 
-            ### ✨ What's Included:
+            ### ✨ Features Included:
             - 📖 Scripture Reader & Note Creator with Chapter Tracker
             - 🕊️ A.C.T.S Prayer War Room with Realtime Praise Wall
             - 💰 Monthly Expenses, 10% Storehouse Tithes, Savings & Auto Balance Carryover
