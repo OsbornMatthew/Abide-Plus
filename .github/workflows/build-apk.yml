@@ -20,7 +20,6 @@ jobs:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
       ORG_GRADLE_PROJECT_android.enableJetifier: "true"
-      EAS_NO_VCS: "1"
 
     steps:
       - name: ⬇️ Checkout Repository
@@ -31,13 +30,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: ☕ Setup Java JDK 17
+      - name: ☕ Setup Java JDK 17 with Gradle Cache
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: 📜 Accept Android SDK Licenses
+      - name: 📜 Accept Android SDK & NDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
           echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1" > "$ANDROID_HOME/licenses/android-sdk-license"
@@ -46,36 +46,32 @@ jobs:
       - name: 📦 Install Node Modules
         run: npm install --legacy-peer-deps
 
-      - name: 🔑 Set Permissions for Gradlew
-        run: chmod +x android/gradlew || true
-
-      - name: 🚀 Build Standalone Android APK (EAS Local / Gradle)
+      - name: 🔑 Set Permissions on Gradle & Hermes Compiler
         run: |
-          npm install -g eas-cli
-          if eas build --platform android --profile preview --local --non-interactive --output=./Abide-Plus.apk; then
-            echo "EAS local build succeeded!"
-          else
-            echo "EAS build fallback to direct Gradle compilation..."
-            cd android
-            ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace || ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace
-            cd ..
-            APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-            cp "$APK_FILE" ./Abide-Plus.apk
-          fi
+          chmod +x android/gradlew
+          chmod -R +x node_modules/react-native/sdks/hermesc/ || true
 
-      - name: 🔍 Verify APK File
+      - name: 🚀 Compile Standalone Android APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace || ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace
+          cd ..
+          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "::error::No APK file generated in android/app/build/outputs/apk"
+            exit 1
+          fi
+          echo "Found APK at: $APK_FILE"
+          cp "$APK_FILE" ./Abide-Plus.apk
+
+      - name: 🔍 Verify Standalone APK
         id: verify-apk
         run: |
           if [ ! -f "./Abide-Plus.apk" ]; then
-            APK_FALLBACK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
-            if [ -n "$APK_FALLBACK" ]; then
-              cp "$APK_FALLBACK" ./Abide-Plus.apk
-            else
-              echo "::error::Abide-Plus.apk was not generated"
-              exit 1
-            fi
+            echo "::error::Abide-Plus.apk was not generated"
+            exit 1
           fi
-          echo "Verified APK at: ./Abide-Plus.apk"
+          ls -lh ./Abide-Plus.apk
           echo "apk_path=./Abide-Plus.apk" >> $GITHUB_OUTPUT
 
       - name: 📤 Upload APK Artifact
