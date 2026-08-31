@@ -1,0 +1,712 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Share,
+} from 'react-native';
+import { useApp } from '../context/AppContext';
+import { Header } from '../components/common/Header';
+import { ProgressRing } from '../components/common/ProgressRing';
+import { PreviousVersesModal } from '../components/modals/PreviousVersesModal';
+import { AddTransactionModal } from '../components/modals/AddTransactionModal';
+import { AddPrayerModal } from '../components/modals/AddPrayerModal';
+import { AddTodoModal } from '../components/modals/AddTodoModal';
+import { PrayerTimerModal } from '../components/modals/PrayerTimerModal';
+import { TransactionType } from '../types/finance';
+import {
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Heart,
+  PiggyBank,
+  Check,
+  ChevronRight,
+  Clock,
+  Wallet,
+  ArrowUpRight,
+  Share2,
+  History,
+} from 'lucide-react-native';
+import { spacing, borderRadius } from '../theme/spacing';
+
+export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const {
+    theme,
+    settings,
+    dailyVerse,
+    setDailyVerseIndex,
+    bibleProgress,
+    financialSummary,
+    todos,
+    toggleTodo,
+    dailyTaskStats,
+    activeFast,
+  } = useApp();
+
+  const isTamil = settings.displayLanguage === 'ta';
+  const currencySym = settings.currency.symbol;
+
+  const [showPreviousVersesModal, setShowPreviousVersesModal] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [transactionModalType, setTransactionModalType] = useState<TransactionType>('expense');
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
+  const [showTodoModal, setShowTodoModal] = useState(false);
+  const [showTimerModal, setShowTimerModal] = useState(false);
+
+  // Automatic current date
+  const todayFormatted = new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayTodos = todos.filter(
+    (t) => !t.dueDate || t.dueDate === todayStr || t.isDailyRoutine
+  );
+
+  const openFinanceModal = (tType: TransactionType) => {
+    setTransactionModalType(tType);
+    setShowTransactionModal(true);
+  };
+
+  const handleShareVerse = async () => {
+    try {
+      const ref = isTamil ? dailyVerse.referenceTa : dailyVerse.referenceEn;
+      const text = isTamil ? dailyVerse.textTa : dailyVerse.textEn;
+      const trans = isTamil ? 'TAOVBSI' : 'NIV';
+      await Share.share({
+        message: `✨ Verse of the Day (${ref} - ${trans})\n\n"${text}"\n\nShared via Abide+ App`,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fastStartDate = activeFast?.startTime
+    ? new Date(activeFast.startTime).toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '';
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Header />
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+        {/* ACTIVE FASTING BANNER */}
+        {activeFast && (
+          <TouchableOpacity
+            style={[
+              styles.fastingBanner,
+              { backgroundColor: theme.primary + '18', borderColor: theme.primary },
+              theme.cardShadow,
+            ]}
+            onPress={() => navigation.navigate('Prayer')}
+            activeOpacity={0.85}
+          >
+            <Clock size={16} color={theme.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.fastingBannerTitle, { color: theme.primary }]}>
+                {isTamil ? 'செயலில் உள்ள உபவாசம்' : 'Active Fasting Session'}
+              </Text>
+              <Text style={[styles.fastingBannerDesc, { color: theme.textMuted }]}>
+                {isTamil ? 'தொடங்கியது:' : 'Started:'} {fastStartDate} ({activeFast.targetHours}h {isTamil ? 'இலக்கு' : 'Target'})
+              </Text>
+            </View>
+            <ChevronRight size={16} color={theme.primary} />
+          </TouchableOpacity>
+        )}
+
+        {/* ELEGANT, CLEAN VERSE OF THE DAY CARD */}
+        <TouchableOpacity
+          style={[
+            styles.elegantVodCard,
+            { backgroundColor: theme.card, borderColor: theme.cardBorder },
+            theme.cardShadow,
+          ]}
+          onPress={() => setShowPreviousVersesModal(true)}
+          activeOpacity={0.88}
+        >
+          {/* Top Bar with Date Badge & History Button */}
+          <View style={styles.vodTopBar}>
+            <View style={[styles.vodDateBadge, { backgroundColor: theme.primary + '20' }]}>
+              <Sparkles size={12} color={theme.primary} />
+              <Text style={[styles.vodDateText, { color: theme.primary }]}>
+                {isTamil ? `இன்று • ${todayFormatted}` : `Today • ${todayFormatted}`}
+              </Text>
+            </View>
+
+            <View style={styles.vodActionIcons}>
+              <View style={[styles.historyPill, { backgroundColor: theme.cardAlt }]}>
+                <History size={11} color={theme.primary} />
+                <Text style={[styles.historyPillText, { color: theme.primary }]}>
+                  {isTamil ? 'முந்தையவை' : 'Archive'}
+                </Text>
+              </View>
+
+              <TouchableOpacity onPress={handleShareVerse} style={[styles.iconButton, { backgroundColor: theme.cardAlt }]}>
+                <Share2 size={12} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tamil Scripture */}
+          <Text style={[styles.tamilVerseText, { color: theme.text }]}>
+            "{dailyVerse.textTa}"
+          </Text>
+          <Text style={[styles.tamilRefText, { color: theme.primary }]}>
+            {dailyVerse.referenceTa} (TAOVBSI)
+          </Text>
+
+          {/* English Scripture */}
+          <View style={[styles.englishBox, { borderTopColor: theme.cardBorder }]}>
+            <Text style={[styles.englishVerseText, { color: theme.textLight }]}>
+              "{dailyVerse.textEn}"
+            </Text>
+            <Text style={[styles.englishRefText, { color: theme.primaryLight }]}>
+              {dailyVerse.referenceEn} (NIV)
+            </Text>
+          </View>
+
+          {/* Short Devotional Thought */}
+          <View style={[styles.devotionalBar, { backgroundColor: theme.cardAlt }]}>
+            <Text style={[styles.devotionalBarText, { color: theme.textMuted }]} numberOfLines={2}>
+              💡 {isTamil ? dailyVerse.reflectionTa : dailyVerse.reflectionEn}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 3 DISCIPLINE RINGS - DISTINCT VIBRANT COLORS */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            {isTamil ? 'அன்றாட ஆவிக்குரிய நிலவரம்' : 'Daily Progress Pulse'}
+          </Text>
+        </View>
+
+        <View style={styles.ringsContainer}>
+          {/* Bible Reading: Amber Gold */}
+          <TouchableOpacity
+            style={[
+              styles.ringCard,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => navigation.navigate('Bible')}
+          >
+            <ProgressRing
+              size={70}
+              strokeWidth={6}
+              progress={bibleProgress.totalPercentage}
+              color={theme.primary}
+              bgColor={theme.ringBg}
+            />
+            <Text style={[styles.ringTitle, { color: theme.text }]}>
+              {isTamil ? 'வேதம்' : 'Bible'}
+            </Text>
+            <Text style={[styles.ringSub, { color: theme.textMuted }]}>
+              {bibleProgress.readChaptersCount} {isTamil ? 'அதி.' : 'chs'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tasks: Radiant Sky Blue (Distinct from Tithe) */}
+          <TouchableOpacity
+            style={[
+              styles.ringCard,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => navigation.navigate('Todo')}
+          >
+            <ProgressRing
+              size={70}
+              strokeWidth={6}
+              progress={dailyTaskStats.completionRatio}
+              color={theme.taskColor}
+              bgColor={theme.ringBg}
+            />
+            <Text style={[styles.ringTitle, { color: theme.text }]}>
+              {isTamil ? 'பணிகள்' : 'Tasks'}
+            </Text>
+            <Text style={[styles.ringSub, { color: theme.textMuted }]}>
+              {dailyTaskStats.completedToday}/{dailyTaskStats.totalToday}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tithe: Neon Emerald Green (Distinct from Tasks) */}
+          <TouchableOpacity
+            style={[
+              styles.ringCard,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => navigation.navigate('Finance')}
+          >
+            <ProgressRing
+              size={70}
+              strokeWidth={6}
+              progress={financialSummary.givingRatio > 0 ? Math.min(100, (financialSummary.monthlyTithes / (financialSummary.expectedTithe || 1)) * 100) : 0}
+              color={theme.titheColor}
+              bgColor={theme.ringBg}
+              centerText={financialSummary.monthlyTithes >= financialSummary.expectedTithe && financialSummary.expectedTithe > 0 ? '10% ✓' : undefined}
+            />
+            <Text style={[styles.ringTitle, { color: theme.text }]}>
+              {isTamil ? 'தசமபாகம்' : 'Tithe'}
+            </Text>
+            <Text style={[styles.ringSub, { color: theme.textMuted }]}>
+              {currencySym}{financialSummary.monthlyTithes.toLocaleString()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 4 CLEAN ACTION TILES (Income | Expense | Tithe | Savings) */}
+        <View style={styles.quickActionsGrid}>
+          {/* Income (Arrow Up) */}
+          <TouchableOpacity
+            style={[
+              styles.quickTile,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => openFinanceModal('income')}
+          >
+            <View style={[styles.quickIconCircle, { backgroundColor: theme.incomeColor + '20' }]}>
+              <TrendingUp size={17} color={theme.incomeColor} />
+            </View>
+            <Text style={[styles.quickTileLabel, { color: theme.text }]}>
+              {isTamil ? 'வரவு' : 'Income'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Expense (Arrow Down) */}
+          <TouchableOpacity
+            style={[
+              styles.quickTile,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => openFinanceModal('expense')}
+          >
+            <View style={[styles.quickIconCircle, { backgroundColor: theme.expenseColor + '20' }]}>
+              <TrendingDown size={17} color={theme.expenseColor} />
+            </View>
+            <Text style={[styles.quickTileLabel, { color: theme.text }]}>
+              {isTamil ? 'செலவு' : 'Expense'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Tithe */}
+          <TouchableOpacity
+            style={[
+              styles.quickTile,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => openFinanceModal('tithe')}
+          >
+            <View style={[styles.quickIconCircle, { backgroundColor: theme.titheColor + '20' }]}>
+              <Heart size={17} color={theme.titheColor} />
+            </View>
+            <Text style={[styles.quickTileLabel, { color: theme.text }]}>
+              {isTamil ? 'தசமபாகம்' : 'Tithe'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Savings */}
+          <TouchableOpacity
+            style={[
+              styles.quickTile,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => openFinanceModal('savings')}
+          >
+            <View style={[styles.quickIconCircle, { backgroundColor: theme.balanceColor + '20' }]}>
+              <PiggyBank size={17} color={theme.balanceColor} />
+            </View>
+            <Text style={[styles.quickTileLabel, { color: theme.text }]}>
+              {isTamil ? 'சேமிப்பு' : 'Savings'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* TODAY'S TASKS */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            {isTamil ? 'இன்றைய பணிகள்' : 'Today’s Tasks'}
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Todo')}>
+            <Text style={[styles.seeAllText, { color: theme.primary }]}>
+              {isTamil ? 'அனைத்தும் >' : 'All >'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.tasksCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          {todayTodos.length > 0 ? (
+            todayTodos.map((todo) => (
+              <TouchableOpacity
+                key={todo.id}
+                style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
+                onPress={() => toggleTodo(todo.id)}
+              >
+                <View
+                  style={[
+                    styles.taskCheck,
+                    {
+                      borderColor: todo.isCompleted ? theme.success : theme.textMuted,
+                      backgroundColor: todo.isCompleted ? theme.success : 'transparent',
+                    },
+                  ]}
+                >
+                  {todo.isCompleted && <Check size={12} color="#FFF" />}
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.taskText,
+                      {
+                        color: todo.isCompleted ? theme.textMuted : theme.text,
+                        textDecorationLine: todo.isCompleted ? 'line-through' : 'none',
+                      },
+                    ]}
+                  >
+                    {isTamil && todo.title === 'Read Bible Today'
+                      ? 'இன்றைய வேதாகம வாசிப்பு'
+                      : isTamil && todo.title === 'Prayer Today'
+                      ? 'இன்றைய ஜெபம்'
+                      : todo.title}
+                  </Text>
+                  <Text style={[styles.taskCategoryBadge, { color: theme.primary }]}>
+                    {isTamil && todo.category === 'Spiritual' ? 'ஆவிக்குரியவை' : todo.category}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyBox}>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                {isTamil ? 'இன்றைய பணிகள் முடிந்தது!' : 'All tasks completed for today!'}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* FINANCIAL SUMMARY QUICK CARD */}
+        <View style={[styles.financeQuickCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          <View style={styles.financeQuickHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Wallet size={16} color={theme.balanceColor} />
+              <Text style={[styles.financeQuickTitle, { color: theme.text }]}>
+                {isTamil ? 'நிதி நிலவரம் (இருப்பு)' : 'Financial Balance'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Finance')}>
+              <ArrowUpRight size={16} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.financeStatsRow}>
+            <View style={styles.financeStatCol}>
+              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'வரவு' : 'Income'}
+              </Text>
+              <Text style={[styles.financeStatVal, { color: theme.incomeColor }]}>
+                +{currencySym}{financialSummary.monthlyIncome.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.financeStatCol}>
+              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'செலவு' : 'Expense'}
+              </Text>
+              <Text style={[styles.financeStatVal, { color: theme.expenseColor }]}>
+                -{currencySym}{financialSummary.monthlyExpenses.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.financeStatCol}>
+              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'சேமிப்பு' : 'Savings'}
+              </Text>
+              <Text style={[styles.financeStatVal, { color: theme.balanceColor }]}>
+                {currencySym}{financialSummary.monthlySavings.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.financeStatCol}>
+              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'இருப்பு' : 'Balance'}
+              </Text>
+              <Text style={[styles.financeStatVal, { color: theme.primary }]}>
+                {currencySym}{financialSummary.netBalance.toLocaleString()}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Modals */}
+      <PreviousVersesModal
+        visible={showPreviousVersesModal}
+        onClose={() => setShowPreviousVersesModal(false)}
+        onSelectVerse={(idx) => setDailyVerseIndex(idx)}
+      />
+      <AddTransactionModal
+        visible={showTransactionModal}
+        onClose={() => setShowTransactionModal(false)}
+        defaultType={transactionModalType}
+      />
+      <AddPrayerModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
+      <AddTodoModal visible={showTodoModal} onClose={() => setShowTodoModal(false)} />
+      <PrayerTimerModal visible={showTimerModal} onClose={() => setShowTimerModal(false)} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollBody: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.hero + 40,
+  },
+  fastingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  fastingBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  fastingBannerDesc: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  elegantVodCard: {
+    padding: spacing.md + 2,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  vodTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm + 2,
+  },
+  vodDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+  },
+  vodDateText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  vodActionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill,
+  },
+  historyPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  iconButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tamilVerseText: {
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 23,
+  },
+  tamilRefText: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  englishBox: {
+    borderTopWidth: 1,
+    paddingTop: 6,
+    marginTop: 2,
+  },
+  englishVerseText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 19,
+  },
+  englishRefText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  devotionalBar: {
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  devotionalBarText: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  ringsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  ringCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+  },
+  ringTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 6,
+  },
+  ringSub: {
+    fontSize: 10,
+    marginTop: 1,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  quickTile: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  quickIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  quickTileLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  tasksCard: {
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    gap: 10,
+  },
+  taskCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  taskText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  taskCategoryBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  emptyBox: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 12,
+  },
+  financeQuickCard: {
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+  },
+  financeQuickHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  financeQuickTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  financeStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  financeStatCol: {
+    alignItems: 'center',
+  },
+  financeStatLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  financeStatVal: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});
