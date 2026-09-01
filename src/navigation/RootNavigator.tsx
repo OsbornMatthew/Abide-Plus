@@ -69,7 +69,7 @@ export const RootNavigator: React.FC = () => {
           component={BibleScreen}
           options={{
             tabBarLabel: isTamil ? 'வேதாகமம்' : 'Bible',
-            tabBarBadge: bibleProgress.totalPercentage > 0 ? `${bibleProgress.totalPercentage}%` : undefined,
+            tabBarBadge: (bibleProgress?.totalPercentage || 0) > 0 ? `${bibleProgress.totalPercentage}%` : undefined,
             tabBarBadgeStyle: {
               backgroundColor: theme.primary,
               color: '#000',

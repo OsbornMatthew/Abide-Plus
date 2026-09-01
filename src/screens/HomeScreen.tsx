@@ -92,11 +92,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleShareVerse = async () => {
     try {
-      const ref = isTamil ? dailyVerse.referenceTa : dailyVerse.referenceEn;
-      const text = isTamil ? dailyVerse.textTa : dailyVerse.textEn;
+      const ref = isTamil ? dailyVerse?.referenceTa : dailyVerse?.referenceEn;
+      const text = isTamil ? dailyVerse?.textTa : dailyVerse?.textEn;
       const trans = isTamil ? 'TAOVBSI' : 'NIV';
       await Share.share({
-        message: `✨ Verse of the Day (${ref} - ${trans})\n\n"${text}"\n\nShared via Abide+ App`,
+        message: `✨ Verse of the Day (${ref || 'Holy Bible'} - ${trans})\n\n"${text || ''}"\n\nShared via Abide+ App`,
       });
     } catch (e) {
       console.error(e);
@@ -214,12 +214,12 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <View style={{ flex: 1 }}>
               {/* Primary Scripture */}
               <Text style={[styles.primaryVerseText, { color: theme.text }]}>
-                "{isTamil ? dailyVerse.textTa : dailyVerse.textEn}"
+                "{isTamil ? dailyVerse?.textTa || '' : dailyVerse?.textEn || ''}"
               </Text>
 
               {/* Graceful Secondary Parallel Translation */}
               <Text style={[styles.secondaryVerseText, { color: theme.textMuted }]}>
-                "{isTamil ? dailyVerse.textEn : dailyVerse.textTa}"
+                "{isTamil ? dailyVerse?.textEn || '' : dailyVerse?.textTa || ''}"
               </Text>
             </View>
           </View>
@@ -228,14 +228,14 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.vodBottomRow}>
             <View style={[styles.referenceBadge, { backgroundColor: theme.primary + '18', borderColor: theme.primary + '35' }]}>
               <Text style={[styles.referenceBadgeText, { color: theme.primary }]}>
-                📖 {isTamil ? `${dailyVerse.referenceTa} (TAOVBSI)` : `${dailyVerse.referenceEn} (NIV)`}
+                📖 {isTamil ? `${dailyVerse?.referenceTa || 'பரிசுத்த வேதாகமம்'} (TAOVBSI)` : `${dailyVerse?.referenceEn || 'Holy Bible'} (NIV)`}
               </Text>
             </View>
 
             {/* Short Devotional Thought */}
             <View style={[styles.reflectionPill, { backgroundColor: theme.cardAlt }]}>
               <Text style={[styles.reflectionPillText, { color: theme.textMuted }]} numberOfLines={1}>
-                💡 {isTamil ? dailyVerse.reflectionTa : dailyVerse.reflectionEn}
+                💡 {isTamil ? dailyVerse?.reflectionTa || '' : dailyVerse?.reflectionEn || ''}
               </Text>
             </View>
           </View>
