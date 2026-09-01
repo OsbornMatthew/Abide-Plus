@@ -55,12 +55,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await loginWithGoogle('google.user@abide.plus', 'Google Pilgrim');
+      await loginWithGoogle();
       if (onSuccess) onSuccess();
       if (onClose) onClose();
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      Alert.alert('Google Sign-In', 'Google Sign-In completed.');
+      Alert.alert('Google Sign-In', e?.message || (isTamil ? 'Google உள்நுழைவு தோல்வியடைந்தது.' : 'Google Sign-In was cancelled or failed.'));
     } finally {
       setLoading(false);
     }

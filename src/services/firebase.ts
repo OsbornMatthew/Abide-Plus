@@ -5,6 +5,8 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
   User as FirebaseUser
 } from "firebase/auth";
 import {
@@ -184,22 +186,30 @@ export const FirebaseSyncService = {
     return profile;
   },
 
-  // Google Sign-In helper
-  async loginWithGoogle(email?: string, name?: string): Promise<UserProfile> {
-    const cleanEmail = (email || "google.user@abide.plus").toLowerCase();
-    const displayName = name || "Google Pilgrim";
-    const uid = "guser-" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
+  // Real Google Sign-In with Firebase Auth
+  async loginWithGoogle(): Promise<UserProfile> {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      const res = await signInWithPopup(auth, provider);
+      const fbUser = res.user;
 
-    const profile: UserProfile = {
-      id: uid,
-      email: cleanEmail,
-      displayName: displayName,
-      avatarColor: "#4285F4",
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
+      const profile: UserProfile = {
+        id: fbUser.uid,
+        email: fbUser.email || "user@abide.plus",
+        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Pilgrim"),
+        avatarColor: "#4285F4",
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
 
-    await this.syncUserData(uid, { userProfile: profile });
-    return profile;
+      await this.syncUserData(fbUser.uid, { userProfile: profile });
+      return profile;
+    } catch (err: any) {
+      console.warn("Google sign-in popup error:", err);
+      // If running in an environment where popups are blocked or native webview, fallback gracefully
+      throw err;
+    }
   },
 };
