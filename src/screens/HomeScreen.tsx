@@ -15,6 +15,8 @@ import { AddTransactionModal } from '../components/modals/AddTransactionModal';
 import { AddPrayerModal } from '../components/modals/AddPrayerModal';
 import { AddTodoModal } from '../components/modals/AddTodoModal';
 import { PrayerTimerModal } from '../components/modals/PrayerTimerModal';
+import { HabitHistoryModal } from '../components/modals/HabitHistoryModal';
+import { Habit } from '../types/habit';
 import { TransactionType } from '../types/finance';
 import {
   Sparkles,
@@ -31,6 +33,7 @@ import {
   History,
   Zap,
   Flame,
+  Calendar,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -60,6 +63,12 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showTodoModal, setShowTodoModal] = useState(false);
   const [showTimerModal, setShowTimerModal] = useState(false);
+
+  // Habit history modal
+  const [selectedHabitForHistory, setSelectedHabitForHistory] = useState<Habit | null>(null);
+  const [showHabitHistoryModal, setShowHabitHistoryModal] = useState(false);
+
+  const publicHabits = habits.filter((h) => !h.isPrivate);
 
   // Automatic current date
   const todayFormatted = new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', {
@@ -206,8 +215,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => navigation.navigate('Bible')}
           >
             <ProgressRing
-              size={70}
-              strokeWidth={6}
+              size={58}
+              strokeWidth={5}
               progress={bibleProgress.totalPercentage}
               color={theme.primary}
               bgColor={theme.ringBg}
@@ -217,6 +226,31 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Text>
             <Text style={[styles.ringSub, { color: theme.textMuted }]}>
               {bibleProgress.readChaptersCount} {isTamil ? 'அதி.' : 'chs'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Habits: Electric Royal Violet */}
+          <TouchableOpacity
+            style={[
+              styles.ringCard,
+              { backgroundColor: theme.card, borderColor: theme.cardBorder },
+              theme.cardShadow,
+            ]}
+            onPress={() => navigation.navigate('More')}
+          >
+            <ProgressRing
+              size={58}
+              strokeWidth={5}
+              progress={habitStats.completionRatio}
+              color="#8B5CF6"
+              bgColor={theme.ringBg}
+              centerText={habitStats.overallBestStreak > 0 ? `🔥${habitStats.overallBestStreak}` : undefined}
+            />
+            <Text style={[styles.ringTitle, { color: theme.text }]}>
+              {isTamil ? 'பழக்கம்' : 'Habits'}
+            </Text>
+            <Text style={[styles.ringSub, { color: theme.textMuted }]}>
+              {habitStats.completedToday}/{habitStats.totalHabits}
             </Text>
           </TouchableOpacity>
 
@@ -230,8 +264,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => navigation.navigate('Todo')}
           >
             <ProgressRing
-              size={70}
-              strokeWidth={6}
+              size={58}
+              strokeWidth={5}
               progress={dailyTaskStats.completionRatio}
               color={theme.taskColor}
               bgColor={theme.ringBg}
@@ -254,8 +288,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => navigation.navigate('Finance')}
           >
             <ProgressRing
-              size={70}
-              strokeWidth={6}
+              size={58}
+              strokeWidth={5}
               progress={financialSummary.givingRatio > 0 ? Math.min(100, (financialSummary.monthlyTithes / (financialSummary.expectedTithe || 1)) * 100) : 0}
               color={theme.titheColor}
               bgColor={theme.ringBg}
@@ -344,29 +378,54 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* DAILY HABITS & SPIRITUAL DISCIPLINES WIDGET */}
         <View style={styles.sectionHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Zap size={16} color="#F59E0B" />
+            <Zap size={16} color="#8B5CF6" />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               {isTamil ? 'ஆவிக்குரிய பழக்கங்கள்' : 'Daily Habits & Disciplines'}
             </Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('More')}>
             <Text style={[styles.seeAllText, { color: theme.primary }]}>
-              {habitStats.completedToday}/{habitStats.totalHabits} {isTamil ? 'முடிந்தது' : 'Done'} >
+              {habitStats.completedToday}/{publicHabits.length} {isTamil ? 'முடிந்தது' : 'Done'} >
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.tasksCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
-          {habits.slice(0, 4).map((h) => {
+          {/* Vibrant Donut Chart Summary Banner */}
+          <View style={[styles.habitDashboardChartRow, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}>
+            <ProgressRing
+              size={60}
+              strokeWidth={6}
+              progress={habitStats.completionRatio}
+              color="#8B5CF6"
+              bgColor={theme.ringBg}
+            />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.habitDashboardChartTitle, { color: theme.text }]}>
+                {habitStats.completionRatio}% {isTamil ? 'இன்றைய நிறைவு' : 'Completed Today'}
+              </Text>
+              <Text style={[styles.habitDashboardChartSub, { color: theme.textMuted }]}>
+                {habitStats.completedToday} of {publicHabits.length} {isTamil ? 'பழக்கங்கள் முடிந்தது' : 'disciplines done'}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <View style={[styles.habitStreakBadge, { backgroundColor: '#F59E0B20' }]}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#F59E0B' }}>
+                    🔥 {habitStats.overallBestStreak}d {isTamil ? 'உச்சபட்ச தொடர்' : 'Best Streak'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {publicHabits.slice(0, 5).map((h) => {
             const isDone = h.completedDates?.includes(todayStr);
             return (
-              <TouchableOpacity
+              <View
                 key={h.id}
                 style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
-                onPress={() => toggleHabit(h.id)}
-                activeOpacity={0.7}
               >
-                <View
+                {/* Check Button */}
+                <TouchableOpacity
                   style={[
                     styles.taskCheck,
                     {
@@ -374,11 +433,21 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                       backgroundColor: isDone ? h.color || theme.success : 'transparent',
                     },
                   ]}
+                  onPress={() => toggleHabit(h.id)}
+                  activeOpacity={0.7}
                 >
                   {isDone && <Check size={12} color="#FFF" />}
-                </View>
+                </TouchableOpacity>
 
-                <View style={{ flex: 1 }}>
+                {/* Habit Title - Touching opens Month & Day History Modal */}
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    setSelectedHabitForHistory(h);
+                    setShowHabitHistoryModal(true);
+                  }}
+                  activeOpacity={0.7}
+                >
                   <Text
                     style={[
                       styles.taskText,
@@ -390,14 +459,27 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   >
                     {isTamil && h.titleTa ? h.titleTa : h.title}
                   </Text>
-                </View>
+                  <Text style={[styles.taskCategoryBadge, { color: h.color || theme.primary }]}>
+                    {h.category}
+                  </Text>
+                </TouchableOpacity>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {/* Right: Streak & Calendar Button */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 10, fontWeight: '800', color: '#F59E0B' }}>
                     🔥 {h.currentStreak || 0}d
                   </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedHabitForHistory(h);
+                      setShowHabitHistoryModal(true);
+                    }}
+                    style={styles.calendarMiniBtn}
+                  >
+                    <Calendar size={13} color={theme.textMuted} />
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -533,6 +615,11 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       <AddPrayerModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
       <AddTodoModal visible={showTodoModal} onClose={() => setShowTodoModal(false)} />
       <PrayerTimerModal visible={showTimerModal} onClose={() => setShowTimerModal(false)} />
+      <HabitHistoryModal
+        visible={showHabitHistoryModal}
+        habit={selectedHabitForHistory}
+        onClose={() => setShowHabitHistoryModal(false)}
+      />
     </View>
   );
 };
@@ -774,5 +861,31 @@ const styles = StyleSheet.create({
   financeStatVal: {
     fontSize: 13,
     fontWeight: '800',
+  },
+  habitDashboardChartRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  habitDashboardChartTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  habitDashboardChartSub: {
+    fontSize: 11,
+    marginTop: 1,
+  },
+  habitStreakBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  calendarMiniBtn: {
+    padding: 5,
+    borderRadius: 6,
   },
 });

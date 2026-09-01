@@ -13,6 +13,7 @@ export interface Habit {
   completedDates: string[]; // YYYY-MM-DD format
   currentStreak: number;
   bestStreak: number;
+  isPrivate?: boolean; // Hide from public dashboard widget
   reminderTime?: string;
   createdAt: string;
 }

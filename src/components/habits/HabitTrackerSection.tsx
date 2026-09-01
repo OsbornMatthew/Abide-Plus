@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
 import { Habit, HabitCategory } from '../../types/habit';
+import { HabitHistoryModal } from '../modals/HabitHistoryModal';
 import {
   Flame,
   BookOpen,
@@ -26,6 +27,9 @@ import {
   Award,
   Calendar,
   Zap,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
 
@@ -48,10 +52,15 @@ export const HabitTrackerSection: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
+  // Habit Calendar History Modal
+  const [selectedHistoryHabit, setSelectedHistoryHabit] = useState<Habit | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
   const [habitTitle, setHabitTitle] = useState('');
   const [habitTitleTa, setHabitTitleTa] = useState('');
   const [habitCategory, setHabitCategory] = useState<HabitCategory>('Spiritual');
   const [habitColor, setHabitColor] = useState('#F59E0B');
+  const [habitIsPrivate, setHabitIsPrivate] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -75,6 +84,7 @@ export const HabitTrackerSection: React.FC = () => {
     setHabitTitleTa('');
     setHabitCategory('Spiritual');
     setHabitColor('#F59E0B');
+    setHabitIsPrivate(false);
     setShowAddModal(true);
   };
 
@@ -84,7 +94,13 @@ export const HabitTrackerSection: React.FC = () => {
     setHabitTitleTa(habit.titleTa || '');
     setHabitCategory(habit.category);
     setHabitColor(habit.color || '#F59E0B');
+    setHabitIsPrivate(habit.isPrivate || false);
     setShowAddModal(true);
+  };
+
+  const handleOpenHistory = (habit: Habit) => {
+    setSelectedHistoryHabit(habit);
+    setShowHistoryModal(true);
   };
 
   const handleSaveHabit = async () => {
@@ -95,6 +111,7 @@ export const HabitTrackerSection: React.FC = () => {
         titleTa: habitTitleTa.trim() || habitTitle.trim(),
         category: habitCategory,
         color: habitColor,
+        isPrivate: habitIsPrivate,
       });
     } else {
       await addHabit({
@@ -105,6 +122,7 @@ export const HabitTrackerSection: React.FC = () => {
         targetDaysPerWeek: 7,
         icon: 'Flame',
         color: habitColor,
+        isPrivate: habitIsPrivate,
       });
     }
     setShowAddModal(false);
@@ -258,20 +276,34 @@ export const HabitTrackerSection: React.FC = () => {
             >
               <View style={styles.habitMainRow}>
                 {/* Left Accent & Icon */}
-                <View
+                <TouchableOpacity
                   style={[
                     styles.iconBox,
                     { backgroundColor: (habit.color || theme.primary) + '20', borderColor: habit.color || theme.primary },
                   ]}
+                  onPress={() => handleOpenHistory(habit)}
+                  activeOpacity={0.7}
                 >
                   <Flame size={18} color={habit.color || theme.primary} />
-                </View>
+                </TouchableOpacity>
 
-                {/* Habit Details */}
-                <View style={styles.habitInfo}>
-                  <Text style={[styles.habitTitle, { color: theme.text }]}>
-                    {isTamil && habit.titleTa ? habit.titleTa : habit.title}
-                  </Text>
+                {/* Habit Details - Tapping opens History Modal */}
+                <TouchableOpacity
+                  style={styles.habitInfo}
+                  onPress={() => handleOpenHistory(habit)}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.habitTitle, { color: theme.text }]}>
+                      {isTamil && habit.titleTa ? habit.titleTa : habit.title}
+                    </Text>
+                    {habit.isPrivate && (
+                      <View style={[styles.privateBadge, { backgroundColor: '#F59E0B20' }]}>
+                        <Lock size={10} color="#F59E0B" />
+                        <Text style={styles.privateBadgeText}>{isTamil ? 'தனிப்பட்டது' : 'Private'}</Text>
+                      </View>
+                    )}
+                  </View>
                   {isTamil && habit.titleTa && (
                     <Text style={[styles.habitSubTitle, { color: theme.textMuted }]}>{habit.title}</Text>
                   )}
@@ -288,7 +320,7 @@ export const HabitTrackerSection: React.FC = () => {
                       </Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
 
                 {/* Right Action: Big Toggle Check Circle */}
                 <TouchableOpacity
@@ -332,8 +364,11 @@ export const HabitTrackerSection: React.FC = () => {
                 </View>
 
                 <View style={styles.cardActions}>
+                  <TouchableOpacity onPress={() => handleOpenHistory(habit)} style={styles.cardActionBtn}>
+                    <Calendar size={14} color={theme.primary} />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleOpenEdit(habit)} style={styles.cardActionBtn}>
-                    <Edit2 size={13} color={theme.primary} />
+                    <Edit2 size={13} color={theme.textMuted} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleDeleteHabitPrompt(habit.id, habit.title)} style={styles.cardActionBtn}>
                     <Trash2 size={13} color={theme.textMuted} />
@@ -422,6 +457,37 @@ export const HabitTrackerSection: React.FC = () => {
               ))}
             </View>
 
+            {/* Private Habit Toggle */}
+            <TouchableOpacity
+              style={[
+                styles.privacyToggleBtn,
+                {
+                  backgroundColor: habitIsPrivate ? '#F59E0B15' : theme.cardAlt,
+                  borderColor: habitIsPrivate ? '#F59E0B' : theme.cardBorder,
+                },
+              ]}
+              onPress={() => setHabitIsPrivate(!habitIsPrivate)}
+              activeOpacity={0.8}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {habitIsPrivate ? <Lock size={15} color="#F59E0B" /> : <Eye size={15} color={theme.textMuted} />}
+                <View>
+                  <Text style={[styles.privacyToggleTitle, { color: habitIsPrivate ? '#F59E0B' : theme.text }]}>
+                    {habitIsPrivate
+                      ? isTamil
+                        ? '🔒 தனிப்பட்ட பழக்கம் (முகப்பில் மறைக்கப்படும்)'
+                        : '🔒 Private Habit (Hidden from Dashboard)'
+                      : isTamil
+                      ? '👁️ பொது பழக்கம் (முகப்பில் காண்பிக்கப்படும்)'
+                      : '👁️ Public Habit (Shown on Dashboard)'}
+                  </Text>
+                  <Text style={{ fontSize: 10, color: theme.textMuted }}>
+                    {isTamil ? 'முகப்பு பலகையில் இருந்து இதை மறைக்கலாம்' : 'Tap to toggle visibility on Home widget'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.saveModalBtn, { backgroundColor: theme.primary }]} onPress={handleSaveHabit}>
               <Check size={16} color="#000" />
               <Text style={styles.saveModalBtnText}>
@@ -431,6 +497,13 @@ export const HabitTrackerSection: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Full Interactive Month-by-Month Calendar History Modal */}
+      <HabitHistoryModal
+        visible={showHistoryModal}
+        habit={selectedHistoryHabit}
+        onClose={() => setShowHistoryModal(false)}
+      />
     </View>
   );
 };
@@ -710,5 +783,28 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 13,
     fontWeight: '800',
+  },
+  privateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  privateBadgeText: {
+    color: '#F59E0B',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  privacyToggleBtn: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+  },
+  privacyToggleTitle: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
