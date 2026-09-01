@@ -29,6 +29,7 @@ import {
   Clock,
   Wallet,
   ArrowUpRight,
+  ArrowDownLeft,
   Share2,
   History,
   Zap,
@@ -339,7 +340,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         {/* 4 CLEAN ACTION TILES (Income | Expense | Tithe | Savings) */}
         <View style={styles.quickActionsGrid}>
-          {/* Income (Arrow Up) */}
+          {/* Income (Incoming Cash Arrow) */}
           <TouchableOpacity
             style={[
               styles.quickTile,
@@ -349,14 +350,14 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => openFinanceModal('income')}
           >
             <View style={[styles.quickIconCircle, { backgroundColor: theme.incomeColor + '20' }]}>
-              <TrendingUp size={17} color={theme.incomeColor} />
+              <ArrowDownLeft size={18} color={theme.incomeColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
               {isTamil ? 'வருமானம்' : 'Income'}
             </Text>
           </TouchableOpacity>
 
-          {/* Expense (Arrow Down) */}
+          {/* Expense (Outgoing Cash Arrow) */}
           <TouchableOpacity
             style={[
               styles.quickTile,
@@ -366,7 +367,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => openFinanceModal('expense')}
           >
             <View style={[styles.quickIconCircle, { backgroundColor: theme.expenseColor + '20' }]}>
-              <TrendingDown size={17} color={theme.expenseColor} />
+              <ArrowUpRight size={18} color={theme.expenseColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
               {isTamil ? 'செலவு' : 'Expense'}

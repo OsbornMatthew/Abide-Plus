@@ -12,7 +12,17 @@ import {
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
 import { TransactionType, IncomeCategory, ExpenseCategory, GivingCategory, SavingsCategory } from '../../types/finance';
-import { X, Check, Heart, TrendingDown, TrendingUp, Sparkles, PiggyBank, Calendar } from 'lucide-react-native';
+import {
+  X,
+  Check,
+  Heart,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Sparkles,
+  PiggyBank,
+  Calendar,
+  PenLine,
+} from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
 
 interface AddTransactionModalProps {
@@ -119,29 +129,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     else if (newType === 'benevolence') setCategory('Benevolence / Alms');
   };
 
-  const parsedAmount = parseFloat(amount) || 0;
-  const titheAmount = type === 'income' ? Math.round(parsedAmount * 0.1) : 0;
-
-  const handleSubmit = async () => {
-    if (!amount || parsedAmount <= 0) return;
-
-    await addTransaction({
-      type,
-      amount: parsedAmount,
-      category,
-      note: note.trim() || (type === 'tithe' ? '10% Storehouse Tithe' : `${category}`),
-      date: selectedDate || todayStr,
-      recipientOrSource: recipientOrSource.trim() || undefined,
-      isTitheDeducted: type === 'income' ? false : undefined,
-    });
-
-    setAmount('');
-    setNote('');
-    setRecipientOrSource('');
-    onClose();
-  };
-
-  const availableCategories =
+  // Select category list based on type
+  const availableCategories: string[] =
     type === 'income'
       ? INCOME_CATEGORIES
       : type === 'expense'
@@ -150,27 +139,49 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       ? SAVINGS_CATEGORIES
       : GIVING_CATEGORIES;
 
+  const handleSubmit = async () => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) return;
+
+    await addTransaction({
+      type,
+      amount: numAmount,
+      category: category.trim() || 'General',
+      note: note.trim() || undefined,
+      recipientOrSource: recipientOrSource.trim() || undefined,
+      date: selectedDate,
+    });
+
+    onClose();
+  };
+
+  const parsedAmount = parseFloat(amount) || 0;
+  const titheAmount = Math.round(parsedAmount * 0.1 * 100) / 100;
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
+        style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.backdrop}
       >
-        <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
           {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {isTamil ? 'பணப்பரிவர்த்தனை பதிவு' : 'Log Transaction'}
-            </Text>
+          <View style={styles.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Heart size={18} color={theme.primary} />
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
+                {isTamil ? 'புதிய பதிவு சேர்க்க' : 'Add Financial Record'}
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardAlt }]}>
-              <X size={16} color={theme.textMuted} />
+              <X size={18} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* 4 Main Type Selector Tabs: Income | Expense | Tithe | Savings */}
             <View style={[styles.typeSelector, { backgroundColor: theme.cardAlt }]}>
-              {/* Income */}
+              {/* Income (Inflow Arrow) */}
               <TouchableOpacity
                 style={[
                   styles.typeTab,
@@ -178,18 +189,18 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 ]}
                 onPress={() => handleTypeChange('income')}
               >
-                <TrendingUp size={13} color={type === 'income' ? '#000' : theme.textMuted} />
+                <ArrowDownLeft size={14} color={type === 'income' ? '#000' : theme.textMuted} />
                 <Text
                   style={[
                     styles.typeTabText,
                     { color: type === 'income' ? '#000' : theme.textMuted },
                   ]}
                 >
-                  {isTamil ? 'வரவு' : 'Income'}
+                  {isTamil ? 'வருமானம்' : 'Income'}
                 </Text>
               </TouchableOpacity>
 
-              {/* Expense */}
+              {/* Expense (Outflow Arrow) */}
               <TouchableOpacity
                 style={[
                   styles.typeTab,
@@ -197,7 +208,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 ]}
                 onPress={() => handleTypeChange('expense')}
               >
-                <TrendingDown size={13} color={type === 'expense' ? '#FFF' : theme.textMuted} />
+                <ArrowUpRight size={14} color={type === 'expense' ? '#FFF' : theme.textMuted} />
                 <Text
                   style={[
                     styles.typeTabText,
@@ -389,9 +400,20 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
             {/* Category selection */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.textMuted }]}>
-                {isTamil ? 'பிரிவு' : 'Category'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={[styles.label, { color: theme.textMuted }]}>
+                  {isTamil ? 'பிரிவு (Category)' : 'Category'}
+                </Text>
+                {category.trim() ? (
+                  <View style={[styles.activeCategoryPill, { backgroundColor: theme.primary + '20' }]}>
+                    <Text style={[styles.activeCategoryPillText, { color: theme.primary }]}>
+                      ✓ {category}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Preset Category Chips */}
               <View style={styles.categoryGrid}>
                 {availableCategories.map((cat) => {
                   const isSelected = category === cat;
@@ -418,6 +440,34 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+
+              {/* Manual Category Writing Field */}
+              <View style={styles.manualCategoryWrapper}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                  <PenLine size={13} color={theme.primary} />
+                  <Text style={[styles.manualCategoryLabel, { color: theme.textMuted }]}>
+                    {isTamil ? 'அல்லது சொந்தப் பிரிவை நேரடியாக எழுதவும்:' : 'Or type a custom category manually:'}
+                  </Text>
+                </View>
+                <TextInput
+                  style={[
+                    styles.manualCategoryInput,
+                    {
+                      backgroundColor: theme.cardAlt,
+                      borderColor: availableCategories.includes(category) ? theme.cardBorder : theme.primary,
+                      color: theme.text,
+                    },
+                  ]}
+                  placeholder={
+                    isTamil
+                      ? 'உங்கள் சொந்தப் பிரிவை உள்ளிடவும் (எ.கா. புத்தகங்கள், பரிசு)'
+                      : 'Type custom category (e.g. Books, Gift, Tuition)...'
+                  }
+                  placeholderTextColor={theme.textMuted}
+                  value={category}
+                  onChangeText={(text) => setCategory(text)}
+                />
               </View>
             </View>
 
@@ -663,5 +713,29 @@ const styles = StyleSheet.create({
   submitBtnText: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  activeCategoryPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: borderRadius.pill,
+  },
+  activeCategoryPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  manualCategoryWrapper: {
+    marginTop: spacing.sm + 2,
+  },
+  manualCategoryLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  manualCategoryInput: {
+    borderWidth: 1.5,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

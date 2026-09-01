@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Plus,
   ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -298,7 +299,7 @@ export const FinanceScreen: React.FC = () => {
             {/* Income */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('income')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <TrendingUp size={11} color={theme.incomeColor} />
+                <ArrowDownLeft size={12} color={theme.incomeColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'வரவு' : 'Income'}
                 </Text>
@@ -313,7 +314,7 @@ export const FinanceScreen: React.FC = () => {
             {/* Expense */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('expense')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <TrendingDown size={11} color={theme.expenseColor} />
+                <ArrowUpRight size={12} color={theme.expenseColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'செலவு' : 'Expense'}
                 </Text>
@@ -363,7 +364,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('income')}
             activeOpacity={0.8}
           >
-            <TrendingUp size={15} color="#FFF" />
+            <ArrowDownLeft size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'வரவு' : 'Income'}
             </Text>
@@ -375,7 +376,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('expense')}
             activeOpacity={0.8}
           >
-            <TrendingDown size={15} color="#FFF" />
+            <ArrowUpRight size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'செலவு' : 'Expense'}
             </Text>
@@ -594,13 +595,13 @@ export const FinanceScreen: React.FC = () => {
                 >
                   <View style={[styles.txIconBox, { backgroundColor: tagColor + '20' }]}>
                     {isInc ? (
-                      <TrendingUp size={16} color={theme.incomeColor} />
+                      <ArrowDownLeft size={16} color={theme.incomeColor} />
                     ) : isSav ? (
                       <PiggyBank size={16} color={theme.balanceColor} />
                     ) : isGiv ? (
                       <Heart size={16} color={theme.primary} />
                     ) : (
-                      <TrendingDown size={16} color={theme.expenseColor} />
+                      <ArrowUpRight size={16} color={theme.expenseColor} />
                     )}
                   </View>
 
