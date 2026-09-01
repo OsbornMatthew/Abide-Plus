@@ -16,13 +16,14 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Standalone Android APK
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
       ANDROID_HOME: "/usr/local/lib/android/sdk"
+      EAS_NO_VCS: "1"
 
     steps:
       - name: Checkout Repository
@@ -45,30 +46,19 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install Dependencies & EAS CLI
+        run: |
+          npm install --legacy-peer-deps
+          npm install -g eas-cli
 
       - name: Set Permissions on gradlew
         run: |
           chmod +x android/gradlew
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
 
-      - name: Compile Standalone APK
+      - name: Build Standalone Android APK with EAS Local
         run: |
-          cd android
-          ./gradlew assembleRelease --no-daemon --max-workers=2 -x lint --stacktrace 2>&1 | tee ../gradle_build.log || ./gradlew assembleDebug --no-daemon --max-workers=2 -x lint --stacktrace 2>&1 | tee -a ../gradle_build.log || true
-          cd ..
-          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            echo "::error::No APK file generated in android/app/build/outputs/apk"
-            echo "### ❌ Gradle Build Error Details" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 gradle_build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "Found APK at: $APK_FILE"
-          cp "$APK_FILE" ./Abide-Plus.apk
+          npx eas-cli build --platform android --profile preview --local --output ./Abide-Plus.apk --non-interactive
 
       - name: Verify APK Generated
         run: |
@@ -93,11 +83,21 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "Abide+ Android App v1.0.${{ github.run_number }}"
           body: |
-            ## Abide+ Android App Download
+            ## 📱 Abide+ Android App Download
 
-            Abide+ Standalone Android APK is ready to install!
+            🎉 **Abide+ Standalone Android APK is ready to install!**
 
-            Download Abide-Plus.apk below and install it directly on your Android phone.
+            Download `Abide-Plus.apk` below and install it directly on your Android phone.
+
+            ### ✨ Features Included:
+            - 🔥 1000 Praises (1000 ஸ்தோத்திர பலிகள்) with Fast Search & Number Filtering
+            - 🎡 Spiritual Decision Maker Wheel with Custom & Editable Wheels
+            - 📖 Scripture Reader & Daily Verse of the Day with Tamil & English translations
+            - 🕊️ A.C.T.S Prayer War Room & Persistent Devotional Timer
+            - 💰 Financial Pulse, 10% Storehouse Tithes, Savings & Transaction Management
+            - 🎯 Daily Spiritual Habits & To-Do Planner
+            - 🛡️ Safe Account Details & 1-Click JSON Backup/Restore
+            - 🌓 Sleek Glassmorphism UI with Dark & Light themes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
