@@ -13,7 +13,6 @@ concurrency:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   build-apk:
