@@ -19,6 +19,7 @@ import {
 } from '../types/finance';
 import { TodoTask } from '../types/todo';
 import { UserProfile } from '../types/auth';
+import { Habit, DEFAULT_HABITS } from '../types/habit';
 import { AppSettings, DEFAULT_SETTINGS, StorageService } from '../services/storage';
 import { AuthService } from '../services/authStorage';
 import { FirebaseSyncService, UserCloudData } from '../services/firebase';
@@ -123,6 +124,19 @@ interface AppContextType {
   startFast: (fastType: FastingRecord['fastType'], targetHours: number, prayerIntention: string) => Promise<void>;
   stopFast: () => Promise<void>;
 
+  // Habit Tracker & Daily Disciplines
+  habits: Habit[];
+  toggleHabit: (id: string, dateStr?: string) => Promise<void>;
+  addHabit: (habit: Omit<Habit, 'id' | 'completedDates' | 'currentStreak' | 'bestStreak' | 'createdAt'>) => Promise<void>;
+  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
+  habitStats: {
+    totalHabits: number;
+    completedToday: number;
+    completionRatio: number;
+    overallBestStreak: number;
+  };
+
   // Backup & Restore
   exportBackupData: () => Promise<string>;
   importBackupData: (jsonStr: string) => Promise<boolean>;
@@ -148,6 +162,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [sermons, setSermons] = useState<SermonNote[]>([]);
   const [memoryVerses, setMemoryVerses] = useState<ScriptureMemoryCard[]>([]);
   const [fastingRecords, setFastingRecords] = useState<FastingRecord[]>([]);
+  const [habits, setHabits] = useState<Habit[]>(DEFAULT_HABITS);
   const [activeVerseIndex, setActiveVerseIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -168,6 +183,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           loadedSermons,
           loadedMemoryVerses,
           loadedFasts,
+          loadedHabits,
         ] = await Promise.all([
           AuthService.getActiveUser(),
           AuthService.getSavedUsers(),
@@ -181,6 +197,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           StorageService.getSermons(),
           StorageService.getMemoryVerses(),
           StorageService.getFastingRecords(),
+          StorageService.getHabits(),
         ]);
 
         setUser(activeUser);
@@ -188,6 +205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSettings(loadedSettings);
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
+        setHabits(loadedHabits);
 
         // Filter out any old pre-loaded seed notes so user starts with a completely clean slate
         const cleanNotes = (loadedVerseNotes || []).filter(
@@ -326,6 +344,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setBibleBooks(cloud.bibleBooks);
           StorageService.saveBibleBooks(cloud.bibleBooks);
         }
+        if (cloud.habits && Array.isArray(cloud.habits)) {
+          setHabits(cloud.habits);
+          StorageService.saveHabits(cloud.habits);
+        }
       }
     });
 
@@ -367,6 +389,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
         setReadingPlans(cloud.readingPlans);
         StorageService.saveReadingPlans(cloud.readingPlans);
+      }
+      if (cloud.habits && Array.isArray(cloud.habits)) {
+        setHabits(cloud.habits);
+        StorageService.saveHabits(cloud.habits);
       }
       if (cloud.settings && typeof cloud.settings === 'object') {
         setSettings((prev) => ({ ...prev, ...cloud.settings }));
@@ -459,6 +485,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setReadingPlans(cloud.readingPlans);
           await StorageService.saveReadingPlans(cloud.readingPlans);
         }
+        if (cloud.habits && Array.isArray(cloud.habits)) {
+          setHabits(cloud.habits);
+          await StorageService.saveHabits(cloud.habits);
+        }
         if (cloud.settings && typeof cloud.settings === 'object') {
           setSettings((prev) => ({ ...prev, ...cloud.settings }));
           await StorageService.saveSettings(cloud.settings);
@@ -487,6 +517,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setMemoryVerses([]);
       setFastingRecords([]);
       setReadingPlans([]);
+      setHabits(DEFAULT_HABITS);
       setSettings(DEFAULT_SETTINGS);
     }
   };
@@ -926,6 +957,113 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ fastingRecords: updated });
   };
 
+  // Habit Helper: Calculate Streak
+  const calculateStreak = (dates: string[]): number => {
+    if (!dates || dates.length === 0) return 0;
+    const sorted = Array.from(new Set(dates)).sort().reverse();
+    const today = new Date().toISOString().split('T')[0];
+    const yesterdayDate = new Date(Date.now() - 86400000);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+    if (!sorted.includes(today) && !sorted.includes(yesterday)) {
+      return 0;
+    }
+
+    let streak = 0;
+    let checkDate = new Date();
+    if (!sorted.includes(today)) {
+      checkDate = yesterdayDate;
+    }
+
+    while (true) {
+      const dStr = checkDate.toISOString().split('T')[0];
+      if (sorted.includes(dStr)) {
+        streak++;
+        checkDate = new Date(checkDate.getTime() - 86400000);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const toggleHabit = async (id: string, dateStr?: string) => {
+    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const updated = habits.map((h) => {
+      if (h.id === id) {
+        const datesSet = new Set(h.completedDates || []);
+        if (datesSet.has(targetDate)) {
+          datesSet.delete(targetDate);
+        } else {
+          datesSet.add(targetDate);
+        }
+        const newDates = Array.from(datesSet).sort();
+        const streak = calculateStreak(newDates);
+        const best = Math.max(h.bestStreak || 0, streak);
+        return {
+          ...h,
+          completedDates: newDates,
+          currentStreak: streak,
+          bestStreak: best,
+        };
+      }
+      return h;
+    });
+    setHabits(updated);
+    await StorageService.saveHabits(updated);
+    syncUserCloud({ habits: updated });
+  };
+
+  const addHabit = async (habit: Omit<Habit, 'id' | 'completedDates' | 'currentStreak' | 'bestStreak' | 'createdAt'>) => {
+    const newHabit: Habit = {
+      ...habit,
+      id: 'habit-' + Date.now(),
+      completedDates: [],
+      currentStreak: 0,
+      bestStreak: 0,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newHabit, ...habits];
+    setHabits(updated);
+    await StorageService.saveHabits(updated);
+    syncUserCloud({ habits: updated });
+  };
+
+  const updateHabit = async (id: string, updates: Partial<Habit>) => {
+    const updated = habits.map((h) => {
+      if (h.id === id) {
+        const merged = { ...h, ...updates };
+        const streak = calculateStreak(merged.completedDates || []);
+        return { ...merged, currentStreak: streak, bestStreak: Math.max(merged.bestStreak || 0, streak) };
+      }
+      return h;
+    });
+    setHabits(updated);
+    await StorageService.saveHabits(updated);
+    syncUserCloud({ habits: updated });
+  };
+
+  const deleteHabit = async (id: string) => {
+    const updated = habits.filter((h) => h.id !== id);
+    setHabits(updated);
+    await StorageService.saveHabits(updated);
+    syncUserCloud({ habits: updated });
+  };
+
+  const habitStats = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const totalHabits = habits.length;
+    const completedToday = habits.filter((h) => h.completedDates?.includes(today)).length;
+    const completionRatio = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
+    const overallBestStreak = habits.reduce((max, h) => Math.max(max, h.bestStreak || 0, h.currentStreak || 0), 0);
+    return {
+      totalHabits,
+      completedToday,
+      completionRatio,
+      overallBestStreak,
+    };
+  }, [habits]);
+
   // Backup & Restore
   const exportBackupData = async () => {
     return await StorageService.exportFullBackup();
@@ -945,6 +1083,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         loadedSermons,
         loadedMemoryVerses,
         loadedFasts,
+        loadedHabits,
       ] = await Promise.all([
         StorageService.getSettings(),
         StorageService.getBibleBooks(),
@@ -956,6 +1095,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         StorageService.getSermons(),
         StorageService.getMemoryVerses(),
         StorageService.getFastingRecords(),
+        StorageService.getHabits(),
       ]);
       setSettings(loadedSettings);
       setBibleBooks(loadedBooks);
@@ -967,6 +1107,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setSermons(loadedSermons);
       setMemoryVerses(loadedMemoryVerses);
       setFastingRecords(loadedFasts);
+      setHabits(loadedHabits);
     }
     return success;
   };
@@ -1032,6 +1173,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fastingHistory: fastingRecords,
         startFast,
         stopFast,
+        habits,
+        toggleHabit,
+        addHabit,
+        updateHabit,
+        deleteHabit,
+        habitStats,
         exportBackupData,
         importBackupData,
         deleteAccount,

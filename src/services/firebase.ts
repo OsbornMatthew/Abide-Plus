@@ -50,6 +50,7 @@ export interface UserCloudData {
   settings?: any;
   memoryVerses?: any[];
   fastingRecords?: any[];
+  habits?: any[];
   lastSyncedAt?: string;
   userProfile?: UserProfile;
 }

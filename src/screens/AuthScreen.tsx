@@ -100,25 +100,37 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
     );
   };
 
+  const handleDismiss = () => {
+    if (onClose) {
+      onClose();
+    } else if (onSuccess) {
+      onSuccess();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Top Close Button Bar */}
-      {onClose && (
-        <View style={styles.topCloseBar}>
-          <TouchableOpacity
-            style={[styles.closeCircleBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <X size={18} color={theme.text} />
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Prominent Top Navigation Bar with Close Cross */}
+      <View style={[styles.topCloseBar, { borderBottomColor: theme.cardBorder }]}>
+        <Text style={[styles.topBarTitle, { color: theme.textMuted }]}>
+          {user ? (isTamil ? 'பயனர் கணக்கு' : 'User Profile') : (isTamil ? 'உள்நுழைக' : 'Sign In')}
+        </Text>
+        <TouchableOpacity
+          style={[styles.closePillBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+          onPress={handleDismiss}
+          activeOpacity={0.7}
+        >
+          <X size={16} color={theme.text} />
+          <Text style={[styles.closePillText, { color: theme.text }]}>
+            {isTamil ? 'மூடு' : 'Close'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, !onClose && { paddingTop: spacing.hero }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Abide+ Pure Text Header without Icon Box */}
         <View style={styles.logoHeader}>
           <AbideLogo fontSize={38} />
@@ -326,6 +338,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
             </View>
           </View>
         )}
+
+        {/* Bottom Back to Dashboard Button */}
+        <TouchableOpacity
+          style={[styles.bottomCloseBtn, { borderColor: theme.cardBorder, backgroundColor: theme.cardAlt }]}
+          onPress={handleDismiss}
+        >
+          <Text style={[styles.bottomCloseText, { color: theme.text }]}>
+            ← {isTamil ? 'முகப்புக்கு திரும்பு' : 'Back to Dashboard'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -338,23 +360,47 @@ const styles = StyleSheet.create({
   topCloseBar: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
+    paddingTop: Platform.OS === 'web' ? spacing.md : spacing.xl,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
   },
-  closeCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  topBarTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  closePillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+  },
+  closePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bottomCloseBtn: {
+    marginTop: spacing.xl,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
+  },
+  bottomCloseText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   scrollContent: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.hero,
     alignItems: 'center',
   },

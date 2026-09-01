@@ -12,6 +12,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
 import { AuthScreen } from './AuthScreen';
+import { HabitTrackerSection } from '../components/habits/HabitTrackerSection';
 import { FastingRecord, SermonNote, ScriptureMemoryCard } from '../types/spiritual';
 import { SUPPORTED_CURRENCIES } from '../types/finance';
 import {
@@ -33,6 +34,7 @@ import {
   Calendar,
   Clock,
   Edit2,
+  Zap,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -64,7 +66,7 @@ export const MoreScreen: React.FC = () => {
 
   const isTamil = settings.displayLanguage === 'ta';
 
-  const [activeSection, setActiveSection] = useState<'fasting' | 'sermons' | 'memory' | 'settings'>('fasting');
+  const [activeSection, setActiveSection] = useState<'habits' | 'fasting' | 'sermons' | 'memory' | 'settings'>('habits');
 
   // Fasting modal
   const [showStartFastModal, setShowStartFastModal] = useState(false);
@@ -295,6 +297,7 @@ export const MoreScreen: React.FC = () => {
       {/* Segmented Top Bar */}
       <View style={[styles.sectionTabs, { backgroundColor: theme.cardAlt }]}>
         {[
+          { key: 'habits', icon: Zap, labelEn: 'Habits', labelTa: 'பழக்கங்கள்' },
           { key: 'fasting', icon: Flame, labelEn: 'Fasting', labelTa: 'உபவாசம்' },
           { key: 'sermons', icon: BookMarked, labelEn: 'Sermons', labelTa: 'பிரசங்கம்' },
           { key: 'memory', icon: Brain, labelEn: 'Memory', labelTa: 'மனனம்' },
@@ -308,7 +311,7 @@ export const MoreScreen: React.FC = () => {
               style={[styles.sectionTabBtn, isSelected && { backgroundColor: theme.primary }]}
               onPress={() => setActiveSection(tab.key as any)}
             >
-              <Icon size={14} color={isSelected ? '#000' : theme.textMuted} />
+              <Icon size={13} color={isSelected ? '#000' : theme.textMuted} />
               <Text style={[styles.sectionTabText, { color: isSelected ? '#000' : theme.textMuted }]}>
                 {isTamil ? tab.labelTa : tab.labelEn}
               </Text>
@@ -318,6 +321,13 @@ export const MoreScreen: React.FC = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* HABITS TRACKER */}
+        {activeSection === 'habits' && (
+          <View style={styles.sectionContainer}>
+            <HabitTrackerSection />
+          </View>
+        )}
+
         {/* FASTING TRACKER WITH COMPLETE DATES */}
         {activeSection === 'fasting' && (
           <View style={styles.sectionContainer}>

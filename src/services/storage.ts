@@ -4,6 +4,7 @@ import { READING_PLANS } from '../data/readingPlans';
 import { BibleBook, ReadingPlan, PrayerItem, FastingRecord, SermonNote, ScriptureMemoryCard, VerseNote, BibleTranslation } from '../types/spiritual';
 import { Transaction, BudgetGoal, GivingPledge, CurrencySetting, SUPPORTED_CURRENCIES } from '../types/finance';
 import { TodoTask } from '../types/todo';
+import { Habit, DEFAULT_HABITS } from '../types/habit';
 
 export interface AppSettings {
   isDarkMode: boolean;
@@ -39,6 +40,7 @@ const STORAGE_KEYS = {
   GIVING_PLEDGES: '@abide_giving_pledges',
   TODOS: '@abide_todos',
   READ_HISTORY: '@abide_read_history',
+  HABITS: '@abide_habits',
 };
 
 // Clean default slate for user
@@ -227,9 +229,29 @@ export const StorageService = {
     await AsyncStorage.setItem(STORAGE_KEYS.FASTING, JSON.stringify(records));
   },
 
+  // Habits Storage
+  async getHabits(): Promise<Habit[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.HABITS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      // Save default habits if empty
+      await this.saveHabits(DEFAULT_HABITS);
+      return DEFAULT_HABITS;
+    } catch {
+      return DEFAULT_HABITS;
+    }
+  },
+
+  async saveHabits(habits: Habit[]): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+  },
+
   // Export full backup as JSON
   async exportFullBackup(): Promise<string> {
-    const [settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts] = await Promise.all([
+    const [settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits] = await Promise.all([
       this.getSettings(),
       this.getBibleBooks(),
       this.getReadingPlans(),
@@ -240,10 +262,11 @@ export const StorageService = {
       this.getSermons(),
       this.getMemoryVerses(),
       this.getFastingRecords(),
+      this.getHabits(),
     ]);
 
     const backup = {
-      version: '1.1',
+      version: '1.2',
       exportedAt: new Date().toISOString(),
       appName: 'Abide+',
       data: {
@@ -257,6 +280,7 @@ export const StorageService = {
         sermons,
         memoryVerses,
         fasts,
+        habits,
       },
     };
     return JSON.stringify(backup, null, 2);
@@ -267,7 +291,7 @@ export const StorageService = {
     try {
       const parsed = JSON.parse(jsonString);
       if (!parsed.data) return false;
-      const { settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts } = parsed.data;
+      const { settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits } = parsed.data;
       if (settings) await this.saveSettings(settings);
       if (books) await this.saveBibleBooks(books);
       if (plans) await this.saveReadingPlans(plans);
@@ -278,6 +302,7 @@ export const StorageService = {
       if (sermons) await this.saveSermons(sermons);
       if (memoryVerses) await this.saveMemoryVerses(memoryVerses);
       if (fasts) await this.saveFastingRecords(fasts);
+      if (habits) await this.saveHabits(habits);
       return true;
     } catch {
       return false;

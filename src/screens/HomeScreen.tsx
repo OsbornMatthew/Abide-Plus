@@ -29,6 +29,8 @@ import {
   ArrowUpRight,
   Share2,
   History,
+  Zap,
+  Flame,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -44,6 +46,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     toggleTodo,
     dailyTaskStats,
     activeFast,
+    habits,
+    toggleHabit,
+    habitStats,
   } = useApp();
 
   const isTamil = settings.displayLanguage === 'ta';
@@ -334,6 +339,67 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               {isTamil ? 'சேமிப்பு' : 'Savings'}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* DAILY HABITS & SPIRITUAL DISCIPLINES WIDGET */}
+        <View style={styles.sectionHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Zap size={16} color="#F59E0B" />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {isTamil ? 'ஆவிக்குரிய பழக்கங்கள்' : 'Daily Habits & Disciplines'}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => navigation.navigate('More')}>
+            <Text style={[styles.seeAllText, { color: theme.primary }]}>
+              {habitStats.completedToday}/{habitStats.totalHabits} {isTamil ? 'முடிந்தது' : 'Done'} >
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.tasksCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          {habits.slice(0, 4).map((h) => {
+            const isDone = h.completedDates?.includes(todayStr);
+            return (
+              <TouchableOpacity
+                key={h.id}
+                style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
+                onPress={() => toggleHabit(h.id)}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.taskCheck,
+                    {
+                      borderColor: isDone ? h.color || theme.success : theme.textMuted,
+                      backgroundColor: isDone ? h.color || theme.success : 'transparent',
+                    },
+                  ]}
+                >
+                  {isDone && <Check size={12} color="#FFF" />}
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.taskText,
+                      {
+                        color: isDone ? theme.textMuted : theme.text,
+                        textDecorationLine: isDone ? 'line-through' : 'none',
+                      },
+                    ]}
+                  >
+                    {isTamil && h.titleTa ? h.titleTa : h.title}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#F59E0B' }}>
+                    🔥 {h.currentStreak || 0}d
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* TODAY'S TASKS */}
