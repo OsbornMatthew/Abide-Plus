@@ -306,14 +306,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Subscribe to realtime changes across devices
     const unsubscribe = FirebaseSyncService.subscribeToUserData(user.id, (cloud) => {
       if (!cloud) return;
-      if (cloud.prayers) setPrayers(cloud.prayers);
-      if (cloud.transactions) setTransactions(cloud.transactions);
-      if (cloud.todos) setTodos(cloud.todos);
-      if (cloud.verseNotes) setVerseNotes(cloud.verseNotes);
-      if (cloud.sermons) setSermons(cloud.sermons);
-      if (cloud.memoryVerses) setMemoryVerses(cloud.memoryVerses);
-      if (cloud.fastingRecords) setFastingRecords(cloud.fastingRecords);
-      if (cloud.bibleBooks) setBibleBooks(cloud.bibleBooks);
+      if (cloud.prayers && Array.isArray(cloud.prayers)) {
+        setPrayers(cloud.prayers);
+        StorageService.savePrayers(cloud.prayers);
+      }
+      if (cloud.transactions && Array.isArray(cloud.transactions)) {
+        setTransactions(cloud.transactions);
+        StorageService.saveTransactions(cloud.transactions);
+      }
+      if (cloud.todos && Array.isArray(cloud.todos)) {
+        setTodos(cloud.todos);
+        StorageService.saveTodos(cloud.todos);
+      }
+      if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
+        setVerseNotes(cloud.verseNotes);
+        StorageService.saveVerseNotes(cloud.verseNotes);
+      }
+      if (cloud.sermons && Array.isArray(cloud.sermons)) {
+        setSermons(cloud.sermons);
+        StorageService.saveSermons(cloud.sermons);
+      }
+      if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
+        setMemoryVerses(cloud.memoryVerses);
+        StorageService.saveMemoryVerses(cloud.memoryVerses);
+      }
+      if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
+        setFastingRecords(cloud.fastingRecords);
+        StorageService.saveFastingRecords(cloud.fastingRecords);
+      }
+      if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
+        setBibleBooks(cloud.bibleBooks);
+        StorageService.saveBibleBooks(cloud.bibleBooks);
+      }
+      if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
+        setReadingPlans(cloud.readingPlans);
+        StorageService.saveReadingPlans(cloud.readingPlans);
+      }
+      if (cloud.settings && typeof cloud.settings === 'object') {
+        setSettings((prev) => ({ ...prev, ...cloud.settings }));
+        StorageService.saveSettings(cloud.settings);
+      }
     });
 
     return () => {
@@ -379,6 +411,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     await StorageService.saveSettings(updated);
+    syncUserCloud({ settings: updated });
   };
 
   const toggleTheme = async () => {
@@ -447,6 +480,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setBibleBooks(updated);
     await StorageService.saveBibleBooks(updated);
+    syncUserCloud({ bibleBooks: updated });
   };
 
   const markAllChaptersRead = async (bookId: string, markRead: boolean) => {
@@ -461,6 +495,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setBibleBooks(updated);
     await StorageService.saveBibleBooks(updated);
+    syncUserCloud({ bibleBooks: updated });
   };
 
   const togglePlanDay = async (planId: string, day: number) => {
@@ -479,6 +514,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setReadingPlans(updated);
     await StorageService.saveReadingPlans(updated);
+    syncUserCloud({ readingPlans: updated });
   };
 
   // Verse Notes
@@ -493,6 +529,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newNote, ...verseNotes];
     setVerseNotes(updated);
     await StorageService.saveVerseNotes(updated);
+    syncUserCloud({ verseNotes: updated });
   };
 
   const updateVerseNote = async (id: string, updates: Partial<VerseNote>) => {
@@ -507,12 +544,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     setVerseNotes(updated);
     await StorageService.saveVerseNotes(updated);
+    syncUserCloud({ verseNotes: updated });
   };
 
   const deleteVerseNote = async (id: string) => {
     const updated = verseNotes.filter((n) => n.id !== id);
     setVerseNotes(updated);
     await StorageService.saveVerseNotes(updated);
+    syncUserCloud({ verseNotes: updated });
   };
 
   // Prayers
@@ -527,6 +566,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newPrayer, ...prayers];
     setPrayers(updated);
     await StorageService.savePrayers(updated);
+    syncUserCloud({ prayers: updated });
   };
 
   const updatePrayer = async (id: string, updates: Partial<PrayerItem>) => {
@@ -535,6 +575,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     setPrayers(updated);
     await StorageService.savePrayers(updated);
+    syncUserCloud({ prayers: updated });
   };
 
   const markPrayerAnswered = async (id: string, testimony?: string) => {
@@ -549,6 +590,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = prayers.filter((p) => p.id !== id);
     setPrayers(updated);
     await StorageService.savePrayers(updated);
+    syncUserCloud({ prayers: updated });
   };
 
   // Transactions, Savings & Financial Summary
@@ -560,12 +602,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newTx, ...transactions];
     setTransactions(updated);
     await StorageService.saveTransactions(updated);
+    syncUserCloud({ transactions: updated });
   };
 
   const deleteTransaction = async (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
     setTransactions(updated);
     await StorageService.saveTransactions(updated);
+    syncUserCloud({ transactions: updated });
   };
 
   const financialSummary = useMemo(() => {
@@ -625,6 +669,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newTodo, ...todos];
     setTodos(updated);
     await StorageService.saveTodos(updated);
+    syncUserCloud({ todos: updated });
   };
 
   const toggleTodo = async (id: string) => {
@@ -641,12 +686,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setTodos(updated);
     await StorageService.saveTodos(updated);
+    syncUserCloud({ todos: updated });
   };
 
   const deleteTodo = async (id: string) => {
     const updated = todos.filter((t) => t.id !== id);
     setTodos(updated);
     await StorageService.saveTodos(updated);
+    syncUserCloud({ todos: updated });
   };
 
   const toggleSubtask = async (todoId: string, subtaskId: string) => {
@@ -667,6 +714,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setTodos(updated);
     await StorageService.saveTodos(updated);
+    syncUserCloud({ todos: updated });
   };
 
   const dailyTaskStats = useMemo(() => {
@@ -689,18 +737,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newSermon, ...sermons];
     setSermons(updated);
     await StorageService.saveSermons(updated);
+    syncUserCloud({ sermons: updated });
   };
 
   const updateSermon = async (id: string, updates: Partial<SermonNote>) => {
     const updated = sermons.map((s) => (s.id === id ? { ...s, ...updates } : s));
     setSermons(updated);
     await StorageService.saveSermons(updated);
+    syncUserCloud({ sermons: updated });
   };
 
   const deleteSermon = async (id: string) => {
     const updated = sermons.filter((s) => s.id !== id);
     setSermons(updated);
     await StorageService.saveSermons(updated);
+    syncUserCloud({ sermons: updated });
   };
 
   const addMemoryVerse = async (card: Omit<ScriptureMemoryCard, 'id' | 'reviewStreak'>) => {
@@ -712,12 +763,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newCard, ...memoryVerses];
     setMemoryVerses(updated);
     await StorageService.saveMemoryVerses(updated);
+    syncUserCloud({ memoryVerses: updated });
   };
 
   const updateMemoryVerse = async (id: string, updates: Partial<ScriptureMemoryCard>) => {
     const updated = memoryVerses.map((m) => (m.id === id ? { ...m, ...updates } : m));
     setMemoryVerses(updated);
     await StorageService.saveMemoryVerses(updated);
+    syncUserCloud({ memoryVerses: updated });
   };
 
   const toggleMemoryVerse = async (id: string) => {
@@ -736,12 +789,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     setMemoryVerses(updated);
     await StorageService.saveMemoryVerses(updated);
+    syncUserCloud({ memoryVerses: updated });
   };
 
   const deleteMemoryVerse = async (id: string) => {
     const updated = memoryVerses.filter((m) => m.id !== id);
     setMemoryVerses(updated);
     await StorageService.saveMemoryVerses(updated);
+    syncUserCloud({ memoryVerses: updated });
   };
 
   // Fasting
@@ -761,6 +816,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newFast, ...fastingRecords];
     setFastingRecords(updated);
     await StorageService.saveFastingRecords(updated);
+    syncUserCloud({ fastingRecords: updated });
   };
 
   const stopFast = async () => {
@@ -772,6 +828,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     setFastingRecords(updated);
     await StorageService.saveFastingRecords(updated);
+    syncUserCloud({ fastingRecords: updated });
   };
 
   // Backup & Restore
