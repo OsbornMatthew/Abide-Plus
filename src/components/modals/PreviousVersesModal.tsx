@@ -14,6 +14,7 @@ import { DAILY_VERSES } from '../../data/dailyVerses';
 import { VerseOfTheDay } from '../../types/spiritual';
 import { X, Search, Share2, Calendar, BookOpen } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 
 interface PreviousVersesModalProps {
   visible: boolean;
@@ -134,17 +135,17 @@ export const PreviousVersesModal: React.FC<PreviousVersesModalProps> = ({
                 </View>
 
                 {/* Tamil Verse */}
-                <Text style={[styles.verseTextTamil, { color: theme.text }]}>
-                  "{verse.textTa}"
+                <Text style={[styles.verseTextTamil, { color: theme.text, fontFamily: typography.tamilFont }]}>
+                  {verse.textTa}
                 </Text>
-                <Text style={[styles.verseRefTamil, { color: theme.primary }]}>
+                <Text style={[styles.verseRefTamil, { color: theme.primary, fontFamily: typography.tamilFont }]}>
                   {verse.referenceTa} (TAOVBSI)
                 </Text>
 
                 {/* English Verse */}
                 <View style={[styles.divider, { borderColor: theme.cardBorder }]}>
                   <Text style={[styles.verseTextEnglish, { color: theme.textLight }]}>
-                    "{verse.textEn}"
+                    {verse.textEn}
                   </Text>
                   <Text style={[styles.verseRefEnglish, { color: theme.primaryLight }]}>
                     {verse.referenceEn} (NIV)

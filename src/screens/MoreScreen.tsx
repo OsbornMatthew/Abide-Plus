@@ -46,6 +46,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export const MoreScreen: React.FC = () => {
   const {
@@ -357,7 +358,7 @@ export const MoreScreen: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header
-        title={isTamil ? 'ஆவிக்குரிய வளர்ச்சி' : 'Spiritual Growth'}
+        title={isTamil ? 'ஆவிக்குரிய கருவிகள்' : 'Spiritual Tools'}
         subtitle={
           isTamil
             ? 'பணிகள் • உபவாசம் • சக்கரம் • பிரசங்கம் • மனனம் • அமைப்பு'
@@ -365,31 +366,53 @@ export const MoreScreen: React.FC = () => {
         }
       />
 
-      {/* Segmented Top Bar */}
-      <View style={[styles.sectionTabs, { backgroundColor: theme.cardAlt }]}>
-        {[
-          { key: 'tasks', icon: CheckSquare, labelEn: 'To-Do', labelTa: 'பணிகள்' },
-          { key: 'fasting', icon: Flame, labelEn: 'Fasting', labelTa: 'உபவாசம்' },
-          { key: 'decision', icon: Disc, labelEn: 'Wheel', labelTa: 'சக்கரம்' },
-          { key: 'sermons', icon: BookMarked, labelEn: 'Sermons', labelTa: 'பிரசங்கம்' },
-          { key: 'memory', icon: Brain, labelEn: 'Memory', labelTa: 'மனனம்' },
-          { key: 'settings', icon: Settings, labelEn: 'Settings', labelTa: 'அமைப்பு' },
-        ].map((tab) => {
-          const isSelected = activeSection === tab.key;
-          const Icon = tab.icon;
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.sectionTabBtn, isSelected && { backgroundColor: theme.primary }]}
-              onPress={() => setActiveSection(tab.key as any)}
-            >
-              <Icon size={13} color={isSelected ? '#000' : theme.textMuted} />
-              <Text style={[styles.sectionTabText, { color: isSelected ? '#000' : theme.textMuted }]}>
-                {isTamil ? tab.labelTa : tab.labelEn}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Horizontal Scrollable Clean Tool Selector */}
+      <View style={styles.sectionTabsWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sectionTabsContent}
+        >
+          {[
+            { key: 'tasks', icon: CheckSquare, labelEn: 'To-Do', labelTa: 'பணிகள்' },
+            { key: 'fasting', icon: Flame, labelEn: 'Fasting', labelTa: 'உபவாசம்' },
+            { key: 'decision', icon: Disc, labelEn: 'Decision Wheel', labelTa: 'சக்கரம்' },
+            { key: 'sermons', icon: BookMarked, labelEn: 'Sermons', labelTa: 'பிரசங்கம்' },
+            { key: 'memory', icon: Brain, labelEn: 'Memory Cards', labelTa: 'மனனம்' },
+            { key: 'settings', icon: Settings, labelEn: 'Settings & Cloud', labelTa: 'அமைப்புகள்' },
+          ].map((tab) => {
+            const isSelected = activeSection === tab.key;
+            const Icon = tab.icon;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.sectionTabPill,
+                  {
+                    backgroundColor: isSelected ? theme.primary : theme.cardAlt,
+                    borderColor: isSelected ? theme.primary : theme.cardBorder,
+                  },
+                ]}
+                onPress={() => setActiveSection(tab.key as any)}
+                activeOpacity={0.8}
+              >
+                <Icon size={14} color={isSelected ? '#000' : theme.textMuted} />
+                <Text
+                  style={[
+                    styles.sectionTabText,
+                    {
+                      color: isSelected ? '#000' : theme.text,
+                      fontFamily: isTamil ? typography.tamilFont : typography.fontFamily,
+                      fontWeight: isSelected ? '800' : '600',
+                    },
+                  ]}
+                >
+                  {isTamil ? tab.labelTa : tab.labelEn}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -1203,25 +1226,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  sectionTabs: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-    borderRadius: borderRadius.md,
-    padding: 3,
+  sectionTabsWrapper: {
+    marginVertical: spacing.xs + 2,
   },
-  sectionTabBtn: {
-    flex: 1,
+  sectionTabsContent: {
+    paddingHorizontal: spacing.lg,
+    gap: 8,
+    alignItems: 'center',
+  },
+  sectionTabPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 7,
-    borderRadius: borderRadius.sm,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
   },
   sectionTabText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12.5,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,

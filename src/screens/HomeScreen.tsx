@@ -37,6 +37,7 @@ import {
   Calendar,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
+import { typography } from '../theme/typography';
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const {
@@ -212,14 +213,30 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <View style={styles.vodBodyRow}>
             <View style={[styles.vodAccentLine, { backgroundColor: theme.primary }]} />
             <View style={{ flex: 1 }}>
-              {/* Primary Scripture */}
-              <Text style={[styles.primaryVerseText, { color: theme.text }]}>
-                "{isTamil ? dailyVerse?.textTa || '' : dailyVerse?.textEn || ''}"
+              {/* Primary Scripture (Without quotes, beautiful typography) */}
+              <Text
+                style={[
+                  styles.primaryVerseText,
+                  {
+                    color: theme.text,
+                    fontFamily: isTamil ? typography.tamilFont : typography.fontFamily,
+                  },
+                ]}
+              >
+                {isTamil ? dailyVerse?.textTa || '' : dailyVerse?.textEn || ''}
               </Text>
 
               {/* Graceful Secondary Parallel Translation */}
-              <Text style={[styles.secondaryVerseText, { color: theme.textMuted }]}>
-                "{isTamil ? dailyVerse?.textEn || '' : dailyVerse?.textTa || ''}"
+              <Text
+                style={[
+                  styles.secondaryVerseText,
+                  {
+                    color: theme.textMuted,
+                    fontFamily: !isTamil ? typography.tamilFont : typography.fontFamily,
+                  },
+                ]}
+              >
+                {isTamil ? dailyVerse?.textEn || '' : dailyVerse?.textTa || ''}
               </Text>
             </View>
           </View>
@@ -227,14 +244,23 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           {/* Reference & Reflection Bottom Row */}
           <View style={styles.vodBottomRow}>
             <View style={[styles.referenceBadge, { backgroundColor: theme.primary + '18', borderColor: theme.primary + '35' }]}>
-              <Text style={[styles.referenceBadgeText, { color: theme.primary }]}>
+              <Text style={[styles.referenceBadgeText, { color: theme.primary, fontFamily: isTamil ? typography.tamilFont : undefined }]}>
                 📖 {isTamil ? `${dailyVerse?.referenceTa || 'பரிசுத்த வேதாகமம்'} (TAOVBSI)` : `${dailyVerse?.referenceEn || 'Holy Bible'} (NIV)`}
               </Text>
             </View>
 
             {/* Short Devotional Thought */}
             <View style={[styles.reflectionPill, { backgroundColor: theme.cardAlt }]}>
-              <Text style={[styles.reflectionPillText, { color: theme.textMuted }]} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.reflectionPillText,
+                  {
+                    color: theme.textMuted,
+                    fontFamily: isTamil ? typography.tamilFont : undefined,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 💡 {isTamil ? dailyVerse?.reflectionTa || '' : dailyVerse?.reflectionEn || ''}
               </Text>
             </View>
