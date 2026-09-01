@@ -192,6 +192,7 @@ export const FirebaseSyncService = {
       const provider = new GoogleAuthProvider();
       provider.addScope("profile");
       provider.addScope("email");
+      provider.setCustomParameters({ prompt: "select_account" });
       const res = await signInWithPopup(auth, provider);
       const fbUser = res.user;
 
@@ -208,7 +209,12 @@ export const FirebaseSyncService = {
       return profile;
     } catch (err: any) {
       console.warn("Google sign-in popup error:", err);
-      // If running in an environment where popups are blocked or native webview, fallback gracefully
+      if (err?.code === "auth/unauthorized-domain") {
+        throw new Error("This domain is not authorized in Firebase. Please add your Vercel URL to Firebase Console -> Authentication -> Settings -> Authorized Domains.");
+      }
+      if (err?.code === "auth/popup-closed-by-user") {
+        throw new Error("Google sign-in window was closed before completing.");
+      }
       throw err;
     }
   },
