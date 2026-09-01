@@ -21,9 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
-      CMAKE_BUILD_PARALLEL_LEVEL: "2"
 
     steps:
       - name: 🚀 Configure 10GB Swap Space (Prevent Compiler OOM)
@@ -52,7 +51,10 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: 📜 Accept Android SDK & NDK Licenses
+      - name: 📱 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 📜 Accept Android SDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
           printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1\n" > "$ANDROID_HOME/licenses/android-sdk-license"
@@ -61,7 +63,7 @@ jobs:
       - name: 📦 Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: 🔑 Set Permissions on Gradle & Hermes Compiler
+      - name: 🔑 Set Permissions on Gradle & Hermes
         run: |
           chmod +x android/gradlew
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
@@ -89,14 +91,14 @@ jobs:
           ls -lh ./Abide-Plus.apk
           echo "apk_path=./Abide-Plus.apk" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload APK Artifact
+      - name: 📤 Upload APK as GitHub Action Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Abide-Plus-Android-APK
           path: ./Abide-Plus.apk
           retention-days: 30
 
-      - name: 🌟 Publish GitHub Release with APK
+      - name: 🌟 Publish GitHub Release with APK Download
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
@@ -106,18 +108,18 @@ jobs:
           body: |
             ## 📱 Abide+ Android App Download
 
-            🎉 **Abide+ Standalone Android APK is ready!**
+            🎉 **Abide+ Standalone Android APK is ready to install!**
 
             Download `Abide-Plus.apk` below and install it directly on your Android phone.
 
             ### ✨ Features Included:
-            - 📖 Scripture Reader & Note Creator with Chapter Tracker
-            - 🕊️ A.C.T.S Prayer War Room with Realtime Praise Wall
-            - 💰 Monthly Expenses, 10% Storehouse Tithes, Savings & Auto Balance Carryover
-            - 🎯 Everyday Disciplines (Read Bible Today & Prayer Today)
-            - 🌓 Refined Light & Dark Themes with Soft Drop Shadows
-            - 🔄 Seamless Realtime Cross-Device Sync (Firebase Firestore)
-            - 🔒 Google & Email/Password Authentication Gate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - 🎡 Spiritual Decision Maker Wheel with Custom & Editable Wheels
+            - 📖 Scripture Reader & Daily Verse of the Day with Tamil & English translations
+            - 🕊️ A.C.T.S Prayer War Room & Persistent Devotional Timer
+            - 💰 Financial Pulse, 10% Storehouse Tithes, Savings & Transaction Management
+            - 🎯 Daily Spiritual Habits & To-Do Planner
+            - 🛡️ Safe Account Details & 1-Click JSON Backup/Restore
+            - 🌓 Sleek Glassmorphism UI with Dark & Light themes
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
