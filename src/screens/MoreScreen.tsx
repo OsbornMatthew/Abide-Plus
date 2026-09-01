@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  Platform,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';

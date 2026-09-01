@@ -455,7 +455,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('Habits')}>
             <Text style={[styles.seeAllText, { color: theme.primary }]}>
-              {habitStats.completedToday}/{publicHabits.length} {isTamil ? 'முடிந்தது' : 'Done'} >
+              {habitStats.completedToday}/{publicHabits.length} {isTamil ? 'முடிந்தது' : 'Done'} {'>'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1032,5 +1032,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     marginTop: 2,
+  },
+  priorityTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  priorityTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
 });

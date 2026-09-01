@@ -8,6 +8,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
 import { UserProfile } from '../../types/auth';
@@ -125,9 +126,13 @@ export const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
                   { backgroundColor: user.avatarColor || theme.primary },
                 ]}
               >
-                <Text style={styles.avatarLargeText}>
-                  {user.displayName.charAt(0).toUpperCase()}
-                </Text>
+                {user.photoURL ? (
+                  <Image source={{ uri: user.photoURL }} style={styles.avatarLargeImage} />
+                ) : (
+                  <Text style={styles.avatarLargeText}>
+                    {user.displayName.charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
 
               <View style={{ flex: 1 }}>
@@ -317,6 +322,12 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarLargeImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
   },
   avatarLargeText: {
     color: '#000',

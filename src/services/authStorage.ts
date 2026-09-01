@@ -6,28 +6,24 @@ const STORAGE_KEYS = {
   SAVED_USERS: '@abide_saved_users_list',
 };
 
-const DEFAULT_PILGRIM: UserProfile = {
-  id: 'pilgrim-default-user',
-  email: 'pilgrim@abide.plus',
-  displayName: 'Pilgrim',
-  avatarColor: '#F59E0B',
-  createdAt: new Date().toISOString(),
-  lastLoginAt: new Date().toISOString(),
-};
-
 export const AuthService = {
   async getActiveUser(): Promise<UserProfile | null> {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
-      if (data) return JSON.parse(data);
-      return DEFAULT_PILGRIM;
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed && parsed.id && parsed.id !== 'pilgrim-default-user') {
+          return parsed;
+        }
+      }
+      return null;
     } catch {
-      return DEFAULT_PILGRIM;
+      return null;
     }
   },
 
   async setActiveUser(user: UserProfile | null): Promise<void> {
-    if (user) {
+    if (user && user.id !== 'pilgrim-default-user') {
       await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(user));
     } else {
       await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
@@ -37,7 +33,12 @@ export const AuthService = {
   async getSavedUsers(): Promise<UserProfile[]> {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.SAVED_USERS);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const list = JSON.parse(data);
+        if (Array.isArray(list)) {
+          return list.filter((u) => u && u.id && u.id !== 'pilgrim-default-user');
+        }
+      }
       return [];
     } catch {
       return [];
@@ -45,9 +46,10 @@ export const AuthService = {
   },
 
   async saveUserToSavedList(user: UserProfile): Promise<UserProfile[]> {
+    if (!user || user.id === 'pilgrim-default-user') return await this.getSavedUsers();
     const saved = await this.getSavedUsers();
     const cleanEmail = user.email.trim().toLowerCase();
-    const filtered = saved.filter((u) => u.email.toLowerCase() !== cleanEmail && u.id !== user.id);
+    const filtered = saved.filter((u) => u.email.toLowerCase() !== cleanEmail && u.id !== user.id && u.id !== 'pilgrim-default-user');
     const updatedList = [user, ...filtered];
     await AsyncStorage.setItem(STORAGE_KEYS.SAVED_USERS, JSON.stringify(updatedList));
     return updatedList;

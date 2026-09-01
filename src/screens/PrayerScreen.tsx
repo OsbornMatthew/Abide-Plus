@@ -12,6 +12,7 @@ import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
 import { AddPrayerModal } from '../components/modals/AddPrayerModal';
 import { PrayerTimerModal } from '../components/modals/PrayerTimerModal';
+import { ThousandPraisesModal } from '../components/modals/ThousandPraisesModal';
 import { PrayerCategory, PrayerItem } from '../types/spiritual';
 import {
   Heart,
@@ -26,6 +27,8 @@ import {
   X,
   Calendar,
   Edit2,
+  Flame,
+  ChevronRight,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -42,9 +45,10 @@ export const PrayerScreen: React.FC = () => {
   } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'answered' | 'waiting'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'answered'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showThousandPraisesModal, setShowThousandPraisesModal] = useState(false);
   const [editingPrayer, setEditingPrayer] = useState<PrayerItem | null>(null);
 
   // Testimony modal for answered prayer
@@ -148,9 +152,36 @@ export const PrayerScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* 1000 PRAISES DEVOTIONAL CARD */}
+        <TouchableOpacity
+          style={[styles.praisesBanner, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}
+          onPress={() => setShowThousandPraisesModal(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.praisesIconCircle, { backgroundColor: '#F59E0B20', borderColor: '#F59E0B50' }]}>
+            <Flame size={20} color="#F59E0B" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.praisesBannerTitle, { color: theme.text }]}>
+                {isTamil ? '1000 ஸ்தோத்திர பலிகள்' : '1000 Praises (Tamil)'}
+              </Text>
+              <View style={[styles.praisesCountPill, { backgroundColor: theme.primary + '25' }]}>
+                <Text style={[styles.praisesCountText, { color: theme.primary }]}>1000</Text>
+              </View>
+            </View>
+            <Text style={[styles.praisesBannerDesc, { color: theme.textMuted }]}>
+              {isTamil
+                ? 'துதிகளின் மத்தியில் வாசம் செய்யும் தேவனைத் துதிப்போம்'
+                : '1000 One-line Praises to the Almighty God'}
+            </Text>
+          </View>
+          <ChevronRight size={16} color={theme.textMuted} />
+        </TouchableOpacity>
+
         {/* STATUS TABS */}
         <View style={[styles.tabBar, { backgroundColor: theme.cardAlt }]}>
-          {(['all', 'active', 'answered', 'waiting'] as const).map((tabKey) => {
+          {(['all', 'active', 'answered'] as const).map((tabKey) => {
             const isSelected = activeTab === tabKey;
             return (
               <TouchableOpacity
@@ -175,13 +206,9 @@ export const PrayerScreen: React.FC = () => {
                     ? isTamil
                       ? 'செயலில்'
                       : 'Active'
-                    : tabKey === 'answered'
-                    ? isTamil
-                      ? 'பதில் கிடைத்தது'
-                      : 'Answered'
                     : isTamil
-                    ? 'காத்திருப்பு'
-                    : 'Waiting'}
+                    ? 'பதில் கிடைத்தது'
+                    : 'Answered'}
                 </Text>
               </TouchableOpacity>
             );
@@ -396,6 +423,7 @@ export const PrayerScreen: React.FC = () => {
         }}
       />
       <PrayerTimerModal visible={showPrayerTimerModal} onClose={() => setShowPrayerTimerModal(false)} />
+      <ThousandPraisesModal visible={showThousandPraisesModal} onClose={() => setShowThousandPraisesModal(false)} />
     </View>
   );
 };
@@ -413,7 +441,41 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  praisesBanner: {
+    padding: spacing.md,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
     marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  praisesIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  praisesBannerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  praisesCountPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+  },
+  praisesCountText: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  praisesBannerDesc: {
+    fontSize: 11,
+    marginTop: 2,
   },
   heroBannerTop: {
     flexDirection: 'row',

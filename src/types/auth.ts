@@ -3,6 +3,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   avatarColor?: string;
+  photoURL?: string;
   createdAt: string;
   lastLoginAt: string;
 }

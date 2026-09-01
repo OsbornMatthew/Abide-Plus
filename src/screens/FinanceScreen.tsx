@@ -24,6 +24,7 @@ import {
   Plus,
   ArrowDown,
   ArrowUp,
+  ArrowDownLeft,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 

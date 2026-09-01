@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
@@ -44,9 +45,65 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
       await loginUser(email.trim(), password.trim(), displayName.trim(), isRegisterMode);
       if (onSuccess) onSuccess();
       if (onClose) onClose();
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Authentication', isTamil ? 'உள்நுழைவு முடிந்தது.' : 'Authentication completed.');
+    } catch (e: any) {
+      console.error('Auth error:', e);
+      const code = e?.code || '';
+      const msg = e?.message || '';
+
+      if (!isRegisterMode) {
+        if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || msg.includes('user-not-found') || msg.includes('invalid-credential')) {
+          Alert.alert(
+            isTamil ? 'கணக்கு கிடைக்கவில்லை' : 'Account Not Found',
+            isTamil
+              ? 'இந்த மின்னஞ்சலில் கணக்கு எதுவும் இல்லை. தொடர முதலில் புதிய கணக்கை உருவாக்கவும்.'
+              : 'No Abide+ account found with this email. Please create a new account first.',
+            [
+              {
+                text: isTamil ? 'கணக்கை உருவாக்கு' : 'Create Account Now',
+                onPress: () => setIsRegisterMode(true),
+              },
+              { text: isTamil ? 'சரி' : 'OK', style: 'cancel' },
+            ]
+          );
+          setIsRegisterMode(true);
+          return;
+        } else if (code === 'auth/wrong-password' || msg.includes('wrong-password')) {
+          Alert.alert(
+            isTamil ? 'தவறான கடவுச்சொல்' : 'Incorrect Password',
+            isTamil ? 'நீங்கள் உள்ளிட்ட கடவுச்சொல் தவறானது.' : 'The password you entered is incorrect. Please try again.'
+          );
+          return;
+        }
+      } else {
+        if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
+          Alert.alert(
+            isTamil ? 'ஏற்கனவே உள்ள கணக்கு' : 'Account Already Exists',
+            isTamil
+              ? 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது. உள்நுழையவும்.'
+              : 'An account with this email already exists. Please sign in instead.',
+            [
+              {
+                text: isTamil ? 'உள்நுழைக' : 'Sign In Now',
+                onPress: () => setIsRegisterMode(false),
+              },
+              { text: isTamil ? 'சரி' : 'OK', style: 'cancel' },
+            ]
+          );
+          setIsRegisterMode(false);
+          return;
+        } else if (code === 'auth/weak-password' || msg.includes('weak-password')) {
+          Alert.alert(
+            isTamil ? 'வலுவற்ற கடவுச்சொல்' : 'Weak Password',
+            isTamil ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்.' : 'Password must be at least 6 characters.'
+          );
+          return;
+        }
+      }
+
+      Alert.alert(
+        isTamil ? 'உள்நுழைவு பிழை' : 'Authentication Error',
+        msg || (isTamil ? 'சரிபார்ப்பு தோல்வியடைந்தது.' : 'Authentication failed. Please check your credentials.')
+      );
     } finally {
       setLoading(false);
     }
@@ -318,7 +375,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
                           { backgroundColor: u.avatarColor || theme.primary },
                         ]}
                       >
-                        <Text style={styles.avatarInitial}>{u.displayName.charAt(0).toUpperCase()}</Text>
+                        {u.photoURL ? (
+                          <Image source={{ uri: u.photoURL }} style={styles.avatarImage} />
+                        ) : (
+                          <Text style={styles.avatarInitial}>{u.displayName.charAt(0).toUpperCase()}</Text>
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.userDisplayName, { color: theme.text }]}>{u.displayName}</Text>
@@ -528,6 +589,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   avatarInitial: {
     color: '#000',

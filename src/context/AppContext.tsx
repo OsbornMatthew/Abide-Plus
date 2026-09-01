@@ -33,7 +33,7 @@ interface AppContextType {
   user: UserProfile | null;
   savedUsers: UserProfile[];
   loginUser: (email: string, pass: string, displayName?: string, isRegister?: boolean) => Promise<void>;
-  loginWithGoogle: (email?: string, name?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logoutUser: () => Promise<void>;
   switchUser: (user: UserProfile) => Promise<void>;
   removeSavedUser: (userId: string) => Promise<void>;
@@ -517,8 +517,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await updateSettings({ userName: loggedIn.displayName });
   };
 
-  const loginWithGoogle = async (email?: string, name?: string) => {
-    const loggedIn = await FirebaseSyncService.loginWithGoogle(email, name);
+  const loginWithGoogle = async () => {
+    const loggedIn = await FirebaseSyncService.loginWithGoogle();
     await AuthService.saveUserToSavedList(loggedIn);
     await AuthService.setActiveUser(loggedIn);
     setUser(loggedIn);
@@ -1385,7 +1385,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteTodo,
         toggleTodo,
         toggleSubtask,
-        toggleSubTask: toggleSubtask,
         dailyTaskStats,
         sermons,
         addSermon,

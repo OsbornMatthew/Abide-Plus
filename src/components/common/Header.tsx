@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from 'react-native';
 import { useApp } from '../../context/AppContext';
 import { AbideLogo } from './AbideLogo';
 import { AuthScreen } from '../../screens/AuthScreen';
@@ -74,7 +74,9 @@ export const Header: React.FC<HeaderProps> = ({
           onPress={() => setShowAuthModal(true)}
           activeOpacity={0.7}
         >
-          {user ? (
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+          ) : user ? (
             <Text style={styles.userInitial}>{user.displayName.charAt(0).toUpperCase()}</Text>
           ) : (
             <User size={14} color="#000" />
@@ -133,6 +135,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   userInitial: {
     color: '#000',

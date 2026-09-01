@@ -45,7 +45,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   category: IncomeCategory | ExpenseCategory | GivingCategory | SavingsCategory | string;
-  note: string;
+  note?: string;
   date: string; // ISO format (YYYY-MM-DD)
   recipientOrSource?: string; // e.g. "Local Church", "Acme Corp"
   isTitheDeducted?: boolean; // for income items, whether 10% was already calculated

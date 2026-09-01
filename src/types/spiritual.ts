@@ -77,7 +77,7 @@ export type PrayerCategory =
   | 'Financial'
   | 'Spiritual Growth';
 
-export type PrayerStatus = 'active' | 'answered' | 'waiting';
+export type PrayerStatus = 'active' | 'answered';
 
 export interface PrayerItem {
   id: string;

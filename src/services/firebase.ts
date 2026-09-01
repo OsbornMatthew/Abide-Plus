@@ -135,7 +135,7 @@ export const FirebaseSyncService = {
   // Register with Firebase Email & Password
   async registerUser(email: string, pass: string, displayName?: string): Promise<UserProfile> {
     const cleanEmail = email.trim().toLowerCase();
-    const name = displayName?.trim() || cleanEmail.split("@")[0] || "Pilgrim";
+    const name = displayName?.trim() || cleanEmail.split("@")[0] || "Believer";
     const res = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
     const fbUser = res.user;
 
@@ -148,6 +148,7 @@ export const FirebaseSyncService = {
       email: cleanEmail,
       displayName: name,
       avatarColor: "#D4AF37",
+      photoURL: fbUser.photoURL || undefined,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
     };
@@ -165,8 +166,9 @@ export const FirebaseSyncService = {
     const profile: UserProfile = {
       id: fbUser.uid,
       email: cleanEmail,
-      displayName: fbUser.displayName || cleanEmail.split("@")[0] || "Pilgrim",
+      displayName: fbUser.displayName || cleanEmail.split("@")[0] || "Believer",
       avatarColor: "#10B981",
+      photoURL: fbUser.photoURL || undefined,
       createdAt: new Date().toISOString(),
       lastLoginAt: new Date().toISOString(),
     };
@@ -188,8 +190,9 @@ export const FirebaseSyncService = {
       const profile: UserProfile = {
         id: fbUser.uid,
         email: fbUser.email || "user@abide.plus",
-        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Pilgrim"),
+        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Believer"),
         avatarColor: "#4285F4",
+        photoURL: fbUser.photoURL || undefined,
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       };
