@@ -185,20 +185,20 @@ export const BibleScreen: React.FC = () => {
               {isTamil ? 'வேதாகம வாசிப்பு' : 'Scripture Progress'}
             </Text>
             <Text style={[styles.heroSub, { color: theme.textMuted }]}>
-              {bibleProgress.readChaptersCount} / {bibleProgress.totalChapters} {isTamil ? 'அதிகாரங்கள்' : 'chapters'}
+              {bibleProgress?.readChaptersCount || 0} / {bibleProgress?.totalChapters || 1189} {isTamil ? 'அதிகாரங்கள்' : 'chapters'}
             </Text>
 
             <View style={styles.testamentStatsRow}>
               <View style={[styles.statPill, { backgroundColor: theme.cardAlt }]}>
                 <Text style={[styles.statPillLabel, { color: theme.textMuted }]}>OT:</Text>
                 <Text style={[styles.statPillVal, { color: theme.primary }]}>
-                  {bibleProgress.otPercentage}%
+                  {bibleProgress?.otPercentage || 0}%
                 </Text>
               </View>
               <View style={[styles.statPill, { backgroundColor: theme.cardAlt }]}>
                 <Text style={[styles.statPillLabel, { color: theme.textMuted }]}>NT:</Text>
                 <Text style={[styles.statPillVal, { color: theme.accentSage }]}>
-                  {bibleProgress.ntPercentage}%
+                  {bibleProgress?.ntPercentage || 0}%
                 </Text>
               </View>
             </View>
@@ -207,7 +207,7 @@ export const BibleScreen: React.FC = () => {
           <ProgressRing
             size={76}
             strokeWidth={6}
-            progress={bibleProgress.totalPercentage}
+            progress={bibleProgress?.totalPercentage || 0}
             color={theme.primary}
             bgColor={theme.cardAlt}
           />

@@ -5,6 +5,7 @@ import { AppProvider, useApp } from './src/context/AppContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AbideLogo } from './src/components/common/AbideLogo';
+import { ErrorBoundary } from './src/components/common/ErrorBoundary';
 
 const MainApp: React.FC = () => {
   const { settings, theme, isLoading } = useApp();
@@ -35,11 +36,13 @@ const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AppProvider>
-        <MainApp />
-      </AppProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <AppProvider>
+          <MainApp />
+        </AppProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
 
