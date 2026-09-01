@@ -73,9 +73,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
   };
 
   const handleRemoveSavedUser = async (targetId: string, name: string) => {
+    const confirmMsg = isTamil
+      ? `${name} கணக்கை சேமிக்கப்பட்ட பட்டியலிலிருந்து அகற்ற விரும்புகிறீர்களா?`
+      : `Remove ${name} from saved accounts?`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(confirmMsg)) {
+        await removeSavedUser(targetId);
+      }
+      return;
+    }
+
     Alert.alert(
       isTamil ? 'கணக்கை அகற்றவா?' : 'Remove Saved Account',
-      isTamil ? `${name} கணக்கை சேமிக்கப்பட்ட பட்டியலிலிருந்து அகற்ற விரும்புகிறீர்களா?` : `Remove ${name} from saved accounts?`,
+      confirmMsg,
       [
         { text: isTamil ? 'ரத்து' : 'Cancel', style: 'cancel' },
         {

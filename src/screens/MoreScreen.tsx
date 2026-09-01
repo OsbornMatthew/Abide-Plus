@@ -96,12 +96,26 @@ export const MoreScreen: React.FC = () => {
   // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const handleDeleteAccountPrompt = () => {
+  const handleDeleteAccountPrompt = async () => {
+    const confirmMsg = isTamil
+      ? 'உங்கள் பயனர் கணக்கு மற்றும் Firebase கிளவுட்டில் உள்ள அனைத்து தரவுகளும் (ஜெபங்கள், குறிப்புகள், வரவு செலவுகள்) நிரந்தரமாக நீக்கப்படும். தொடரவா?'
+      : 'This will permanently delete your account and wipe all your data (prayers, expenses, notes, tasks) from Firebase Cloud. Are you sure you want to proceed?';
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(confirmMsg)) {
+        await deleteAccount();
+        window.alert(
+          isTamil
+            ? 'உங்கள் கணக்கு மற்றும் கிளவுட் தரவுகள் முழுமையாக நீக்கப்பட்டன.'
+            : 'Your account and cloud data have been completely deleted.'
+        );
+      }
+      return;
+    }
+
     Alert.alert(
       isTamil ? 'கணக்கை நிரந்தரமாக நீக்கவா?' : 'Delete Account & Cloud Data',
-      isTamil
-        ? 'உங்கள் பயனர் கணக்கு மற்றும் Firebase கிளவுட்டில் உள்ள அனைத்து தரவுகளும் (ஜெபங்கள், குறிப்புகள், வரவு செலவுகள்) நிரந்தரமாக நீக்கப்படும். தொடரவா?'
-        : 'This will permanently delete your account and wipe all your data (prayers, expenses, notes, tasks) from Firebase Cloud. Are you sure you want to proceed?',
+      confirmMsg,
       [
         { text: isTamil ? 'ரத்து' : 'Cancel', style: 'cancel' },
         {
