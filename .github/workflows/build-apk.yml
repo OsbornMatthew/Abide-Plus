@@ -2,21 +2,21 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: build-apk-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  build-apk:
-    name: 📱 Build Standalone Android APK
+  build:
+    name: Build Android APK
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
@@ -25,36 +25,35 @@ jobs:
       ANDROID_HOME: "/usr/local/lib/android/sdk"
 
     steps:
-      - name: ⬇️ Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js 20
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: ☕ Setup Java JDK 17
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📱 Configure Android SDK & local.properties
+      - name: Configure Android SDK and Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          cat android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: 📦 Install Dependencies
+      - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: 🔑 Set Permissions
+      - name: Set Permissions on gradlew
         run: |
           chmod +x android/gradlew
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
 
-      - name: 🚀 Compile Standalone Android APK
+      - name: Compile Standalone APK
         run: |
           cd android
           ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
@@ -67,24 +66,22 @@ jobs:
           echo "Found APK at: $APK_FILE"
           cp "$APK_FILE" ./Abide-Plus.apk
 
-      - name: 🔍 Verify Standalone APK
-        id: verify-apk
+      - name: Verify APK Generated
         run: |
           if [ ! -f "./Abide-Plus.apk" ]; then
             echo "::error::Abide-Plus.apk was not generated"
             exit 1
           fi
           ls -lh ./Abide-Plus.apk
-          echo "apk_path=./Abide-Plus.apk" >> $GITHUB_OUTPUT
 
-      - name: 📤 Upload APK as GitHub Action Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Abide-Plus-Android-APK
           path: ./Abide-Plus.apk
           retention-days: 30
 
-      - name: 🌟 Publish GitHub Release with APK Download
+      - name: Publish GitHub Release
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
@@ -92,21 +89,11 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "Abide+ Android App v1.0.${{ github.run_number }}"
           body: |
-            ## 📱 Abide+ Android App Download
+            ## Abide+ Android App Download
 
-            🎉 **Abide+ Standalone Android APK is ready to install!**
+            Abide+ Standalone Android APK is ready to install!
 
-            Download `Abide-Plus.apk` below and install it directly on your Android phone.
-
-            ### ✨ Features Included:
-            - 🔥 1000 Praises (1000 ஸ்தோத்திர பலிகள்) with Fast Search & Number Filtering
-            - 🎡 Spiritual Decision Maker Wheel with Custom & Editable Wheels
-            - 📖 Scripture Reader & Daily Verse of the Day with Tamil & English translations
-            - 🕊️ A.C.T.S Prayer War Room & Persistent Devotional Timer
-            - 💰 Financial Pulse, 10% Storehouse Tithes, Savings & Transaction Management
-            - 🎯 Daily Spiritual Habits & To-Do Planner
-            - 🛡️ Safe Account Details & 1-Click JSON Backup/Restore
-            - 🌓 Sleek Glassmorphism UI with Dark & Light themes
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            Download Abide-Plus.apk below and install it directly on your Android phone.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
