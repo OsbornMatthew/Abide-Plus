@@ -81,6 +81,7 @@ interface AppContextType {
   // Financial Stewardship, Expenses & Savings
   transactions: Transaction[];
   addTransaction: (tx: Omit<Transaction, 'id'>) => Promise<void>;
+  updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   financialSummary: {
     monthlyIncome: number;
@@ -99,6 +100,7 @@ interface AppContextType {
   // Smart To-Do Planner
   todos: TodoTask[];
   addTodo: (todo: Omit<TodoTask, 'id' | 'createdAt'>) => Promise<void>;
+  updateTodo: (id: string, updates: Partial<TodoTask>) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleSubtask: (todoId: string, subtaskId: string) => Promise<void>;
@@ -819,6 +821,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ transactions: updated });
   };
 
+  const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
+    const updated = transactions.map((t) =>
+      t.id === id ? { ...t, ...updates } : t
+    );
+    setTransactions(updated);
+    await StorageService.saveTransactions(updated);
+    syncUserCloud({ transactions: updated });
+  };
+
   const deleteTransaction = async (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
     setTransactions(updated);
@@ -881,6 +892,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: new Date().toISOString(),
     };
     const updated = [newTodo, ...todos];
+    setTodos(updated);
+    await StorageService.saveTodos(updated);
+    syncUserCloud({ todos: updated });
+  };
+
+  const updateTodo = async (id: string, updates: Partial<TodoTask>) => {
+    const updated = todos.map((t) =>
+      t.id === id ? { ...t, ...updates } : t
+    );
     setTodos(updated);
     await StorageService.saveTodos(updated);
     syncUserCloud({ todos: updated });
@@ -1364,7 +1384,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateTodo,
         deleteTodo,
         toggleTodo,
-        toggleSubTask,
+        toggleSubtask,
+        toggleSubTask: toggleSubtask,
         dailyTaskStats,
         sermons,
         addSermon,
