@@ -192,10 +192,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [sermons, setSermons] = useState<SermonNote[]>([]);
   const [memoryVerses, setMemoryVerses] = useState<ScriptureMemoryCard[]>([]);
   const [fastingRecords, setFastingRecords] = useState<FastingRecord[]>([]);
-  const [habits, setHabits] = useState<Habit[]>(DEFAULT_HABITS);
-  const [decisionWheels, setDecisionWheels] = useState<DecisionWheel[]>(DEFAULT_DECISION_WHEELS);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [decisionWheels, setDecisionWheels] = useState<DecisionWheel[]>([]);
   const [decisionResults, setDecisionResults] = useState<DecisionResult[]>([]);
-  const [activeWheelId, setActiveWheelId] = useState<string>(DEFAULT_DECISION_WHEELS[0]?.id || 'wheel-scripture-study');
+  const [activeWheelId, setActiveWheelId] = useState<string>('');
 
   // Deterministic 1 Verse per day based on calendar day-of-year
   const todayVerseIndex = useMemo(() => {
@@ -263,21 +263,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
 
-        // Clear all previous test history dates and reset cleanly starting from today (1 day)
-        const today = new Date().toISOString().split('T')[0];
-        const sanitizedHabits = (loadedHabits || []).map((h: any) => {
-          const isDoneToday = (h.completedDates || []).includes(today);
-          const cleanDates = isDoneToday ? [today] : [];
-          return {
-            ...h,
-            completedDates: cleanDates,
-            currentStreak: isDoneToday ? 1 : 0,
-            bestStreak: isDoneToday ? 1 : 0,
-          };
-        });
-        setHabits(sanitizedHabits);
-        await StorageService.saveHabits(sanitizedHabits);
-        syncUserCloud({ habits: sanitizedHabits });
+        // Clean out default seed habits so users start with their own
+        const defaultHabitIds = new Set([
+          'habit-morning-prayer',
+          'habit-bible-reading',
+          'habit-intercession',
+          'habit-acts-kindness',
+          'habit-gratitude',
+          'habit-stewardship',
+        ]);
+        const userHabits = (loadedHabits || []).filter((h: any) => h && h.id && !defaultHabitIds.has(h.id));
+        setHabits(userHabits);
+        await StorageService.saveHabits(userHabits);
+        syncUserCloud({ habits: userHabits });
+
+        // Clean out default seed wheels so users start with their own
+        const defaultWheelIds = new Set([
+          'wheel-scripture-study',
+          'wheel-prayer-intercession',
+          'wheel-kindness-mission',
+          'wheel-daily-focus',
+        ]);
+        const userWheels = (loadedWheels || []).filter((w: any) => w && w.id && !defaultWheelIds.has(w.id));
+        setDecisionWheels(userWheels);
+        if (userWheels.length > 0) {
+          setActiveWheelId(userWheels[0].id);
+        } else {
+          setActiveWheelId('');
+        }
+        await StorageService.saveDecisionWheels(userWheels);
+        syncUserCloud({ decisionWheels: userWheels } as any);
+        setDecisionResults(loadedResults || []);
 
         // Filter out any old pre-loaded seed notes so user starts with a completely clean slate
         const cleanNotes = (loadedVerseNotes || []).filter(
@@ -607,7 +623,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setMemoryVerses([]);
       setFastingRecords([]);
       setReadingPlans([]);
-      setHabits(DEFAULT_HABITS);
+      setHabits([]);
       setSettings(DEFAULT_SETTINGS);
     }
   };
@@ -1202,13 +1218,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteDecisionWheel = async (id: string) => {
     const updated = decisionWheels.filter((w) => w.id !== id);
-    const safeList = updated.length > 0 ? updated : DEFAULT_DECISION_WHEELS;
-    setDecisionWheels(safeList);
+    setDecisionWheels(updated);
     if (activeWheelId === id) {
-      setActiveWheelId(safeList[0].id);
+      setActiveWheelId(updated[0]?.id || '');
     }
-    await StorageService.saveDecisionWheels(safeList);
-    syncUserCloud({ decisionWheels: safeList } as any);
+    await StorageService.saveDecisionWheels(updated);
+    syncUserCloud({ decisionWheels: updated } as any);
   };
 
   const recordDecisionResult = async (result: Omit<DecisionResult, 'id' | 'timestamp'>) => {

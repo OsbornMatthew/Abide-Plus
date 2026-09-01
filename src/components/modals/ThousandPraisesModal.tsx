@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Platform,
-  Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
 import { THOUSAND_PRAISES, PraiseItem } from '../../data/thousandPraises';
-import { X, Search, CheckCircle, Circle, Copy, Sparkles, RotateCcw, Share2, Flame } from 'lucide-react-native';
+import { X, Search, Flame } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
 
 interface ThousandPraisesModalProps {
@@ -35,84 +32,12 @@ const PRAISE_RANGES = [
   { label: '901 - 1000', min: 901, max: 1000 },
 ];
 
-const STORAGE_KEY_READ_PRAISES = '@abide_read_praises_set';
-
 export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visible, onClose }) => {
   const { theme, settings } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
-  const [readPraiseIds, setReadPraiseIds] = useState<number[]>([]);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
-
-  // Load saved progress
-  useEffect(() => {
-    async function loadProgress() {
-      try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY_READ_PRAISES);
-        if (stored) {
-          setReadPraiseIds(JSON.parse(stored));
-        }
-      } catch (e) {
-        console.warn('Error loading praise read history:', e);
-      }
-    }
-    if (visible) {
-      loadProgress();
-    }
-  }, [visible]);
-
-  // Toggle read status
-  const toggleRead = async (id: number) => {
-    let next: number[];
-    if (readPraiseIds.includes(id)) {
-      next = readPraiseIds.filter((item) => item !== id);
-    } else {
-      next = [...readPraiseIds, id];
-    }
-    setReadPraiseIds(next);
-    await AsyncStorage.setItem(STORAGE_KEY_READ_PRAISES, JSON.stringify(next));
-  };
-
-  const handleResetProgress = () => {
-    const confirmMsg = isTamil
-      ? 'வாசித்த பலிகளின் பதிவுகளை மீட்டமைக்க விரும்புகிறீர்களா?'
-      : 'Reset your 1000 Praises progress?';
-
-    if (Platform.OS === 'web') {
-      if (window.confirm(confirmMsg)) {
-        setReadPraiseIds([]);
-        AsyncStorage.removeItem(STORAGE_KEY_READ_PRAISES);
-      }
-      return;
-    }
-
-    Alert.alert(
-      isTamil ? 'மீட்டமைக்கவா?' : 'Reset Progress',
-      confirmMsg,
-      [
-        { text: isTamil ? 'ரத்து' : 'Cancel', style: 'cancel' },
-        {
-          text: isTamil ? 'மீட்டமை' : 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            setReadPraiseIds([]);
-            await AsyncStorage.removeItem(STORAGE_KEY_READ_PRAISES);
-          },
-        },
-      ]
-    );
-  };
-
-  const handleCopy = (item: PraiseItem) => {
-    const copyText = `${item.number}. ${item.text} 🙏 #1000Praises #AbidePlus`;
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(copyText);
-    }
-    setCopiedId(item.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   const filteredPraises = useMemo(() => {
     const range = PRAISE_RANGES[selectedRangeIndex];
@@ -124,7 +49,6 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      // If user typed a number
       const numQuery = parseInt(q.replace('#', ''), 10);
       if (!isNaN(numQuery)) {
         list = THOUSAND_PRAISES.filter((p) => p.number === numQuery || p.number.toString().includes(q));
@@ -132,7 +56,6 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
         list = list.filter(
           (p) =>
             p.text.toLowerCase().includes(q) ||
-            p.category.toLowerCase().includes(q) ||
             p.number.toString() === q
         );
       }
@@ -141,62 +64,28 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
     return list;
   }, [selectedRangeIndex, searchQuery]);
 
-  const progressPercent = Math.min(100, Math.round((readPraiseIds.length / 1000) * 100));
-
   const renderItem = ({ item }: { item: PraiseItem }) => {
-    const isRead = readPraiseIds.includes(item.id);
-    const isCopied = copiedId === item.id;
-
     return (
       <View
         style={[
           styles.praiseCard,
           {
-            backgroundColor: isRead ? theme.cardAlt : theme.card,
-            borderColor: isRead ? theme.primary + '50' : theme.cardBorder,
+            backgroundColor: theme.card,
+            borderColor: theme.cardBorder,
           },
           theme.cardShadow,
         ]}
       >
-        <View style={styles.praiseCardHeader}>
-          <View style={styles.badgeRow}>
-            <View style={[styles.numberBadge, { backgroundColor: isRead ? theme.primary : theme.cardAlt, borderColor: theme.cardBorder }]}>
-              <Text style={[styles.numberBadgeText, { color: isRead ? '#000' : theme.primary }]}>
-                #{item.number}
-              </Text>
-            </View>
-            <Text style={[styles.categoryTag, { color: theme.textMuted }]} numberOfLines={1}>
-              {item.category}
+        <View style={styles.praiseRow}>
+          <View style={[styles.numberBadge, { backgroundColor: theme.primary + '18', borderColor: theme.primary + '35' }]}>
+            <Text style={[styles.numberBadgeText, { color: theme.primary }]}>
+              #{item.number}
             </Text>
           </View>
-
-          <View style={styles.actionIconsRow}>
-            <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: isCopied ? theme.success + '25' : theme.cardAlt }]}
-              onPress={() => handleCopy(item)}
-              activeOpacity={0.7}
-            >
-              <Copy size={13} color={isCopied ? theme.success : theme.textMuted} />
-              {isCopied && <Text style={{ fontSize: 10, color: theme.success, fontWeight: '700' }}>Copied</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: isRead ? theme.primary + '25' : theme.cardAlt }]}
-              onPress={() => toggleRead(item.id)}
-              activeOpacity={0.7}
-            >
-              {isRead ? (
-                <CheckCircle size={16} color={theme.primary} />
-              ) : (
-                <Circle size={16} color={theme.textMuted} />
-              )}
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.praiseText, { color: theme.text }]}>
+            {item.text}
+          </Text>
         </View>
-
-        <Text style={[styles.praiseText, { color: isRead ? theme.textMuted : theme.text }]}>
-          {item.text}
-        </Text>
       </View>
     );
   };
@@ -227,31 +116,6 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
           </TouchableOpacity>
         </View>
 
-        {/* DEVOTION PROGRESS CARD */}
-        <View style={[styles.progressCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
-          <View style={styles.progressTop}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={15} color={theme.primary} />
-              <Text style={[styles.progressLabel, { color: theme.text }]}>
-                {isTamil ? 'ஜெப முன்னேற்றம்' : 'Devotion Progress'}: {readPraiseIds.length} / 1000 ({progressPercent}%)
-              </Text>
-            </View>
-
-            {readPraiseIds.length > 0 && (
-              <TouchableOpacity onPress={handleResetProgress} style={styles.resetBtn}>
-                <RotateCcw size={12} color={theme.textMuted} />
-                <Text style={[styles.resetBtnText, { color: theme.textMuted }]}>
-                  {isTamil ? 'மீட்டமை' : 'Reset'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={[styles.progressBarTrack, { backgroundColor: theme.cardAlt }]}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: theme.primary }]} />
-          </View>
-        </View>
-
         {/* SEARCH BAR */}
         <View style={styles.searchSection}>
           <View style={[styles.searchBox, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
@@ -271,7 +135,7 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
           </View>
         </View>
 
-        {/* CATEGORY / NUMBER RANGE PILLS */}
+        {/* NUMBER RANGE PILLS */}
         <View style={styles.rangePillsSection}>
           <FlatList
             horizontal
@@ -316,8 +180,8 @@ export const ThousandPraisesModal: React.FC<ThousandPraisesModalProps> = ({ visi
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          initialNumToRender={15}
-          maxToRenderPerBatch={25}
+          initialNumToRender={20}
+          maxToRenderPerBatch={30}
           windowSize={10}
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -366,43 +230,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  progressCard: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    gap: 8,
-  },
-  progressTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  progressLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  resetBtnText: {
-    fontSize: 11,
-  },
-  progressBarTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
   searchSection: {
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   searchBox: {
     flexDirection: 'row',
@@ -438,55 +268,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: 40,
-    gap: 10,
+    gap: 8,
   },
   praiseCard: {
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    gap: 8,
   },
-  praiseCardHeader: {
+  praiseRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
+    alignItems: 'flex-start',
+    gap: 10,
   },
   numberBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
+    marginTop: 2,
   },
   numberBadgeText: {
     fontSize: 11,
     fontWeight: '900',
   },
-  categoryTag: {
-    fontSize: 11,
-    flex: 1,
-  },
-  actionIconsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  iconBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: borderRadius.sm,
-    gap: 4,
-  },
   praiseText: {
+    flex: 1,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
     fontWeight: '600',
   },
   emptyState: {

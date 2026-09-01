@@ -487,71 +487,93 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </View>
           </View>
 
-          {publicHabits.slice(0, 5).map((h) => {
-            const isDone = h.completedDates?.includes(todayStr);
-            return (
-              <View
-                key={h.id}
-                style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
+          {publicHabits.length === 0 ? (
+            <View style={{ padding: spacing.md, alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 12, color: theme.textMuted, textAlign: 'center' }}>
+                {isTamil ? 'பழக்கங்கள் எதுவும் சேர்க்கப்படவில்லை' : 'No habits added yet'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Habits')}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: borderRadius.md,
+                  backgroundColor: theme.primary + '20',
+                  marginTop: 4,
+                }}
               >
-                {/* Check Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.taskCheck,
-                    {
-                      borderColor: isDone ? h.color || theme.success : theme.textMuted,
-                      backgroundColor: isDone ? h.color || theme.success : 'transparent',
-                    },
-                  ]}
-                  onPress={() => toggleHabit(h.id)}
-                  activeOpacity={0.7}
+                <Text style={{ fontSize: 11, fontWeight: '800', color: theme.primary }}>
+                  {isTamil ? '+ புதிய பழக்கத்தைச் சேர்க்க' : '+ Add Habits'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            publicHabits.slice(0, 5).map((h) => {
+              const isDone = h.completedDates?.includes(todayStr);
+              return (
+                <View
+                  key={h.id}
+                  style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
                 >
-                  {isDone && <Check size={12} color="#FFF" />}
-                </TouchableOpacity>
-
-                {/* Habit Title - Touching opens Month & Day History Modal */}
-                <TouchableOpacity
-                  style={{ flex: 1 }}
-                  onPress={() => {
-                    setSelectedHabitForHistory(h);
-                    setShowHabitHistoryModal(true);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
+                  {/* Check Button */}
+                  <TouchableOpacity
                     style={[
-                      styles.taskText,
+                      styles.taskCheck,
                       {
-                        color: isDone ? theme.textMuted : theme.text,
-                        textDecorationLine: isDone ? 'line-through' : 'none',
+                        borderColor: isDone ? h.color || theme.success : theme.textMuted,
+                        backgroundColor: isDone ? h.color || theme.success : 'transparent',
                       },
                     ]}
+                    onPress={() => toggleHabit(h.id)}
+                    activeOpacity={0.7}
                   >
-                    {isTamil && h.titleTa ? h.titleTa : h.title}
-                  </Text>
-                  <Text style={[styles.taskCategoryBadge, { color: h.color || theme.primary }]}>
-                    {h.category}
-                  </Text>
-                </TouchableOpacity>
+                    {isDone && <Check size={12} color="#FFF" />}
+                  </TouchableOpacity>
 
-                {/* Right: Streak & Calendar Button */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#F59E0B' }}>
-                    🔥 {h.currentStreak || 0}d
-                  </Text>
+                  {/* Habit Title - Touching opens Month & Day History Modal */}
                   <TouchableOpacity
+                    style={{ flex: 1 }}
                     onPress={() => {
                       setSelectedHabitForHistory(h);
                       setShowHabitHistoryModal(true);
                     }}
-                    style={styles.calendarMiniBtn}
+                    activeOpacity={0.7}
                   >
-                    <Calendar size={13} color={theme.textMuted} />
+                    <Text
+                      style={[
+                        styles.taskText,
+                        {
+                          color: isDone ? theme.textMuted : theme.text,
+                          textDecorationLine: isDone ? 'line-through' : 'none',
+                        },
+                      ]}
+                    >
+                      {isTamil && h.titleTa ? h.titleTa : h.title}
+                    </Text>
+                    <Text style={[styles.taskCategoryBadge, { color: h.color || theme.primary }]}>
+                      {h.category}
+                    </Text>
                   </TouchableOpacity>
+
+                  {/* Right: Streak & Calendar Button */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#F59E0B' }}>
+                      🔥 {h.currentStreak || 0}d
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedHabitForHistory(h);
+                        setShowHabitHistoryModal(true);
+                      }}
+                      style={styles.calendarMiniBtn}
+                    >
+                      <Calendar size={13} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
         </View>
 
         {/* TODAY'S TASKS */}

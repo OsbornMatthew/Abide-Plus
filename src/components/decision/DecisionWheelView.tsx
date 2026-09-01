@@ -153,14 +153,20 @@ export const DecisionWheelView: React.FC<DecisionWheelViewProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Top Header Selector & Wheel Tabs */}
+      {/* Header Bar */}
       <View style={styles.wheelHeaderRow}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.sectionSubtitle, { color: theme.primary }]}>
             ✨ {isTamil ? 'தீர்மானச் சக்கரம்' : 'SPIRITUAL DECISION MAKER'}
           </Text>
           <Text style={[styles.sectionMainTitle, { color: theme.text }]}>
-            {isTamil ? activeWheel.titleTa || activeWheel.title : activeWheel.title}
+            {decisionWheels.length > 0
+              ? isTamil
+                ? activeWheel.titleTa || activeWheel.title
+                : activeWheel.title
+              : isTamil
+              ? 'தீர்மானச் சக்கரம்'
+              : 'Spiritual Decision Maker'}
           </Text>
         </View>
 
@@ -178,15 +184,17 @@ export const DecisionWheelView: React.FC<DecisionWheelViewProps> = ({
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.smallIconBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
-            onPress={() => onOpenEditWheel(activeWheel)}
-            activeOpacity={0.7}
-          >
-            <Edit3 size={15} color={theme.primary} />
-          </TouchableOpacity>
+          {decisionWheels.length > 0 && (
+            <TouchableOpacity
+              style={[styles.smallIconBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+              onPress={() => onOpenEditWheel(activeWheel)}
+              activeOpacity={0.7}
+            >
+              <Edit3 size={15} color={theme.primary} />
+            </TouchableOpacity>
+          )}
 
-          {decisionWheels.length > 1 && (
+          {decisionWheels.length > 0 && (
             <TouchableOpacity
               style={[styles.smallIconBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
               onPress={handleDeleteActiveWheel}
@@ -198,182 +206,208 @@ export const DecisionWheelView: React.FC<DecisionWheelViewProps> = ({
         </View>
       </View>
 
-      {/* Wheel Pills Horizontal Carousel */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.wheelsPillsRow}
-      >
-        {decisionWheels.map((wheel) => {
-          const isSelected = wheel.id === activeWheel.id;
-          return (
+      {decisionWheels.length === 0 ? (
+        <View style={[styles.emptyWheelCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          <Sparkles size={36} color={theme.primary} />
+          <Text style={[styles.emptyWheelTitle, { color: theme.text }]}>
+            {isTamil ? 'தீர்மானச் சக்கரங்கள் எதுவும் இல்லை' : 'No Decision Wheels Yet'}
+          </Text>
+          <Text style={[styles.emptyWheelDesc, { color: theme.textMuted }]}>
+            {isTamil
+              ? 'வேத வாசிப்பு, ஜெபப் பரிந்துரை அல்லது அன்றாட காரியங்களுக்கு உங்கள் சொந்த சக்கரங்களை உருவாக்கவும்.'
+              : 'Create custom spinning wheels for Scripture focus, prayer intentions, or daily choices.'}
+          </Text>
+          <TouchableOpacity
+            style={[styles.createFirstWheelBtn, { backgroundColor: theme.primary }]}
+            onPress={onOpenCreateWheel}
+            activeOpacity={0.8}
+          >
+            <Plus size={16} color="#000" />
+            <Text style={styles.createFirstWheelBtnText}>
+              {isTamil ? 'புதிய சக்கரத்தை உருவாக்கு' : 'Create Decision Wheel'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* Wheel Pills Horizontal Carousel */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.wheelsPillsRow}
+          >
+            {decisionWheels.map((wheel) => {
+              const isSelected = wheel.id === activeWheel.id;
+              return (
+                <TouchableOpacity
+                  key={wheel.id}
+                  style={[
+                    styles.wheelPill,
+                    {
+                      backgroundColor: isSelected ? theme.primary : theme.card,
+                      borderColor: isSelected ? theme.primary : theme.cardBorder,
+                    },
+                    theme.cardShadow,
+                  ]}
+                  onPress={() => {
+                    if (!isSpinning) {
+                      setActiveWheelId(wheel.id);
+                      setWinnerResult(null);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.wheelPillText,
+                      { color: isSelected ? '#000' : theme.text },
+                    ]}
+                  >
+                    {isTamil ? wheel.titleTa || wheel.title : wheel.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* New Wheel Button */}
             <TouchableOpacity
-              key={wheel.id}
+              style={[styles.newWheelPill, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+              onPress={onOpenCreateWheel}
+              activeOpacity={0.8}
+            >
+              <Plus size={14} color={theme.primary} />
+              <Text style={[styles.newWheelPillText, { color: theme.primary }]}>
+                {isTamil ? 'புதிய சக்கரம்' : 'New Wheel'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+
+          {/* SPINNING WHEEL STAGE */}
+          <View style={styles.wheelStage}>
+            {/* Pointer Arrow Indicator (Pointing Downwards at Top) */}
+            <View style={styles.pointerContainer}>
+              <View style={[styles.pointerTriangle, { borderTopColor: theme.primary }]} />
+            </View>
+
+            {/* Outer Glow Ring */}
+            <View
               style={[
-                styles.wheelPill,
+                styles.wheelOuterRing,
                 {
-                  backgroundColor: isSelected ? theme.primary : theme.card,
-                  borderColor: isSelected ? theme.primary : theme.cardBorder,
+                  borderColor: theme.primary + '55',
+                  backgroundColor: theme.card,
                 },
                 theme.cardShadow,
               ]}
-              onPress={() => {
-                if (!isSpinning) {
-                  setActiveWheelId(wheel.id);
-                  setWinnerResult(null);
-                }
-              }}
-              activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.wheelPillText,
-                  { color: isSelected ? '#000' : theme.text },
-                ]}
+              <Animated.View
+                style={{
+                  width: WHEEL_SIZE,
+                  height: WHEEL_SIZE,
+                  transform: [{ rotate: spinInterpolate }],
+                }}
               >
-                {isTamil ? wheel.titleTa || wheel.title : wheel.title}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}>
+                  <G>
+                    {options.map((opt, i) => {
+                      const startAngle = i * sliceAngle;
+                      const endAngle = (i + 1) * sliceAngle;
+                      const startRad = (Math.PI / 180) * startAngle;
+                      const endRad = (Math.PI / 180) * endAngle;
+                      const midRad = (Math.PI / 180) * (startAngle + sliceAngle / 2);
 
-        {/* New Wheel Button */}
-        <TouchableOpacity
-          style={[styles.newWheelPill, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
-          onPress={onOpenCreateWheel}
-          activeOpacity={0.8}
-        >
-          <Plus size={14} color={theme.primary} />
-          <Text style={[styles.newWheelPillText, { color: theme.primary }]}>
-            {isTamil ? 'புதிய சக்கரம்' : 'New Wheel'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+                      const x1 = RADIUS + RADIUS * Math.cos(startRad);
+                      const y1 = RADIUS + RADIUS * Math.sin(startRad);
+                      const x2 = RADIUS + RADIUS * Math.cos(endRad);
+                      const y2 = RADIUS + RADIUS * Math.sin(endRad);
 
-      {/* SPINNING WHEEL STAGE */}
-      <View style={styles.wheelStage}>
-        {/* Pointer Arrow Indicator (Pointing Downwards at Top) */}
-        <View style={styles.pointerContainer}>
-          <View style={[styles.pointerTriangle, { borderTopColor: theme.primary }]} />
-        </View>
+                      const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+                      const pathData = `M${RADIUS},${RADIUS} L${x1},${y1} A${RADIUS},${RADIUS} 0 ${largeArcFlag},1 ${x2},${y2} Z`;
 
-        {/* Outer Glow Ring */}
-        <View
-          style={[
-            styles.wheelOuterRing,
-            {
-              borderColor: theme.primary + '55',
-              backgroundColor: theme.card,
-            },
-            theme.cardShadow,
-          ]}
-        >
-          <Animated.View
-            style={{
-              width: WHEEL_SIZE,
-              height: WHEEL_SIZE,
-              transform: [{ rotate: spinInterpolate }],
-            }}
-          >
-            <Svg width={WHEEL_SIZE} height={WHEEL_SIZE} viewBox={`0 0 ${WHEEL_SIZE} ${WHEEL_SIZE}`}>
-              <G>
-                {options.map((opt, i) => {
-                  const startAngle = i * sliceAngle;
-                  const endAngle = (i + 1) * sliceAngle;
-                  const startRad = (Math.PI / 180) * startAngle;
-                  const endRad = (Math.PI / 180) * endAngle;
-                  const midRad = (Math.PI / 180) * (startAngle + sliceAngle / 2);
+                      // Text Label positioning along radial arm
+                      const textDist = RADIUS * 0.65;
+                      const tx = RADIUS + textDist * Math.cos(midRad);
+                      const ty = RADIUS + textDist * Math.sin(midRad);
+                      const rotDeg = startAngle + sliceAngle / 2;
 
-                  const x1 = RADIUS + RADIUS * Math.cos(startRad);
-                  const y1 = RADIUS + RADIUS * Math.sin(startRad);
-                  const x2 = RADIUS + RADIUS * Math.cos(endRad);
-                  const y2 = RADIUS + RADIUS * Math.sin(endRad);
+                      const displayText =
+                        opt.text.length > 18 ? opt.text.substring(0, 16) + '...' : opt.text;
 
-                  const largeArcFlag = sliceAngle > 180 ? 1 : 0;
-                  const pathData = `M${RADIUS},${RADIUS} L${x1},${y1} A${RADIUS},${RADIUS} 0 ${largeArcFlag},1 ${x2},${y2} Z`;
+                      return (
+                        <G key={opt.id || i}>
+                          <Path d={pathData} fill={opt.color || '#F59E0B'} stroke="#070B14" strokeWidth="2.5" />
+                          <SvgText
+                            x={tx}
+                            y={ty}
+                            fill="#FFFFFF"
+                            fontSize={numSlices > 8 ? 10 : 11.5}
+                            fontWeight="800"
+                            textAnchor="middle"
+                            alignmentBaseline="central"
+                            transform={`rotate(${rotDeg}, ${tx}, ${ty})`}
+                          >
+                            {displayText}
+                          </SvgText>
+                        </G>
+                      );
+                    })}
+                  </G>
 
-                  // Text Label positioning along radial arm
-                  const textDist = RADIUS * 0.65;
-                  const tx = RADIUS + textDist * Math.cos(midRad);
-                  const ty = RADIUS + textDist * Math.sin(midRad);
-                  const rotDeg = startAngle + sliceAngle / 2;
+                  {/* Decorative Center Ring */}
+                  <Circle cx={RADIUS} cy={RADIUS} r={28} fill="#070B14" stroke={theme.cardBorder} strokeWidth="3" />
+                </Svg>
+              </Animated.View>
 
-                  const displayText =
-                    opt.text.length > 18 ? opt.text.substring(0, 16) + '...' : opt.text;
-
-                  return (
-                    <G key={opt.id || i}>
-                      <Path d={pathData} fill={opt.color || '#F59E0B'} stroke="#070B14" strokeWidth="2.5" />
-                      <SvgText
-                        x={tx}
-                        y={ty}
-                        fill="#FFFFFF"
-                        fontSize={numSlices > 8 ? 10 : 11.5}
-                        fontWeight="800"
-                        textAnchor="middle"
-                        alignmentBaseline="central"
-                        transform={`rotate(${rotDeg}, ${tx}, ${ty})`}
-                      >
-                        {displayText}
-                      </SvgText>
-                    </G>
-                  );
-                })}
-              </G>
-
-              {/* Decorative Center Ring */}
-              <Circle cx={RADIUS} cy={RADIUS} r={28} fill="#070B14" stroke={theme.cardBorder} strokeWidth="3" />
-            </Svg>
-          </Animated.View>
-
-          {/* Central Spin Button Overlay */}
-          <TouchableOpacity
-            style={[
-              styles.centerSpinBtn,
-              {
-                backgroundColor: theme.primary,
-                borderColor: '#070B14',
-              },
-            ]}
-            onPress={handleSpin}
-            disabled={isSpinning || options.length === 0}
-            activeOpacity={0.85}
-          >
-            <RotateCw size={18} color="#000" />
-            <Text style={styles.centerSpinText}>
-              {isSpinning ? (isTamil ? 'சுழல்கிறது...' : 'SPINNING') : (isTamil ? 'சுழற்று' : 'SPIN')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* OPTIONS LIST & EDIT PROMPT */}
-      <View style={[styles.optionsCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
-        <View style={styles.optionsCardHeader}>
-          <Text style={[styles.optionsTitle, { color: theme.text }]}>
-            🎯 {isTamil ? 'சக்கரத்தின் தேர்வுகள்' : 'Current Wheel Choices'} ({options.length})
-          </Text>
-          <TouchableOpacity onPress={() => onOpenEditWheel(activeWheel)}>
-            <Text style={[styles.editLinkText, { color: theme.primary }]}>
-              + {isTamil ? 'மாற்றுக / சேர்க்க' : 'Edit Choices'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.optionsChipsGrid}>
-          {options.map((opt, idx) => (
-            <View
-              key={opt.id || idx}
-              style={[styles.optChip, { backgroundColor: theme.cardAlt, borderColor: opt.color }]}
-            >
-              <View style={[styles.optDot, { backgroundColor: opt.color }]} />
-              <Text style={[styles.optChipText, { color: theme.text }]} numberOfLines={1}>
-                {opt.text}
-              </Text>
+              {/* Central Spin Button Overlay */}
+              <TouchableOpacity
+                style={[
+                  styles.centerSpinBtn,
+                  {
+                    backgroundColor: theme.primary,
+                    borderColor: '#070B14',
+                  },
+                ]}
+                onPress={handleSpin}
+                disabled={isSpinning || options.length === 0}
+                activeOpacity={0.85}
+              >
+                <RotateCw size={18} color="#000" />
+                <Text style={styles.centerSpinText}>
+                  {isSpinning ? (isTamil ? 'சுழல்கிறது...' : 'SPINNING') : (isTamil ? 'சுழற்று' : 'SPIN')}
+                </Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      </View>
+          </View>
+
+          {/* OPTIONS LIST & EDIT PROMPT */}
+          <View style={[styles.optionsCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+            <View style={styles.optionsCardHeader}>
+              <Text style={[styles.optionsTitle, { color: theme.text }]}>
+                🎯 {isTamil ? 'சக்கரத்தின் தேர்வுகள்' : 'Current Wheel Choices'} ({options.length})
+              </Text>
+              <TouchableOpacity onPress={() => onOpenEditWheel(activeWheel)}>
+                <Text style={[styles.editLinkText, { color: theme.primary }]}>
+                  + {isTamil ? 'மாற்றுக / சேர்க்க' : 'Edit Choices'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.optionsChipsGrid}>
+              {options.map((opt, idx) => (
+                <View
+                  key={opt.id || idx}
+                  style={[styles.optChip, { backgroundColor: theme.cardAlt, borderColor: opt.color }]}
+                >
+                  <View style={[styles.optDot, { backgroundColor: opt.color }]} />
+                  <Text style={[styles.optChipText, { color: theme.text }]} numberOfLines={1}>
+                    {opt.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
 
       {/* WINNER RESULT POPUP BANNER */}
       {showWinnerModal && winnerResult && (
@@ -657,5 +691,40 @@ const styles = StyleSheet.create({
   closeWinnerText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  emptyWheelCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    gap: 10,
+  },
+  emptyWheelTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptyWheelDesc: {
+    fontSize: 12.5,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: spacing.md,
+  },
+  createFirstWheelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
+    marginTop: 6,
+  },
+  createFirstWheelBtnText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

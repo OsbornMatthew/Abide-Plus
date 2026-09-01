@@ -378,6 +378,30 @@ export const HabitTrackerSection: React.FC = () => {
             </View>
           );
         })}
+
+        {filteredHabits.length === 0 && (
+          <View style={[styles.emptyHabitsCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+            <Zap size={32} color={theme.primary} />
+            <Text style={[styles.emptyHabitsTitle, { color: theme.text }]}>
+              {isTamil ? 'பழக்கங்கள் எதுவும் இல்லை' : 'No Habits Added Yet'}
+            </Text>
+            <Text style={[styles.emptyHabitsDesc, { color: theme.textMuted }]}>
+              {isTamil
+                ? 'ஜெபம், வேத வாசிப்பு, நற்செயல்கள் அல்லது ஒழுக்கங்களுக்கு உங்கள் சொந்த பழக்கங்களை உருவாக்கவும்.'
+                : 'Start tracking your daily spiritual disciplines, Bible reading, prayer, and lifestyle habits.'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.addFirstHabitBtn, { backgroundColor: theme.primary }]}
+              onPress={handleOpenAdd}
+              activeOpacity={0.8}
+            >
+              <Plus size={16} color="#000" />
+              <Text style={styles.addFirstHabitBtnText}>
+                {isTamil ? 'புதிய பழக்கத்தை சேர்க்க' : 'Add Your First Habit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Add / Edit Habit Modal */}
@@ -806,5 +830,39 @@ const styles = StyleSheet.create({
   privacyToggleTitle: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  emptyHabitsCard: {
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: spacing.sm,
+  },
+  emptyHabitsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptyHabitsDesc: {
+    fontSize: 12.5,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: spacing.md,
+  },
+  addFirstHabitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: borderRadius.md,
+    marginTop: 6,
+  },
+  addFirstHabitBtnText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

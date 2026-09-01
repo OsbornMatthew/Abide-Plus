@@ -240,13 +240,11 @@ export const StorageService = {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.HABITS);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
-      // Save default habits if empty
-      await this.saveHabits(DEFAULT_HABITS);
-      return DEFAULT_HABITS;
+      return [];
     } catch {
-      return DEFAULT_HABITS;
+      return [];
     }
   },
 
@@ -260,12 +258,11 @@ export const StorageService = {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_WHEELS);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
-      await this.saveDecisionWheels(DEFAULT_DECISION_WHEELS);
-      return DEFAULT_DECISION_WHEELS;
+      return [];
     } catch {
-      return DEFAULT_DECISION_WHEELS;
+      return [];
     }
   },
 
