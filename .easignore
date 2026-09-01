@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+build/
+*.lock
+*.lockfile
+.system_generated/
+scratch/
+.vscode/
