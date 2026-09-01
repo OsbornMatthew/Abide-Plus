@@ -46,19 +46,26 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Install Dependencies & EAS CLI
-        run: |
-          npm install --legacy-peer-deps
-          npm install -g eas-cli
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Set Permissions on gradlew
         run: |
           chmod +x android/gradlew
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
 
-      - name: Build Standalone Android APK with EAS Local
+      - name: Compile Standalone Android APK
         run: |
-          npx eas-cli build --platform android --profile preview --local --output ./Abide-Plus.apk --non-interactive
+          cd android
+          ./gradlew assembleRelease --no-daemon --max-workers=2 -x lint --stacktrace || ./gradlew assembleDebug --no-daemon --max-workers=2 -x lint --stacktrace
+          cd ..
+          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "::error::No APK file generated in android/app/build/outputs/apk"
+            exit 1
+          fi
+          echo "Found APK at: $APK_FILE"
+          cp "$APK_FILE" ./Abide-Plus.apk
 
       - name: Verify APK Generated
         run: |
