@@ -261,6 +261,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadData();
   }, []);
 
+  // Auto-bind Firebase Auth state changes across page reloads & devices
+  useEffect(() => {
+    const unsubAuth = FirebaseSyncService.onAuthStateChanged(async (fbUser) => {
+      if (fbUser && (!user || user.id !== fbUser.uid)) {
+        const active: UserProfile = {
+          id: fbUser.uid,
+          email: fbUser.email || "user@abide.plus",
+          displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Pilgrim"),
+          avatarColor: "#4285F4",
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+        };
+        setUser(active);
+        await AuthService.setActiveUser(active);
+        await AuthService.saveUserToSavedList(active);
+      }
+    });
+
+    return () => {
+      if (unsubAuth) unsubAuth();
+    };
+  }, []);
+
   // Seamless Realtime Firestore Cross-Device Sync Listener
   useEffect(() => {
     if (!user?.id) return;
