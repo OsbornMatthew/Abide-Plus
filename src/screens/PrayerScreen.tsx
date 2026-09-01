@@ -30,14 +30,22 @@ import {
 import { spacing, borderRadius } from '../theme/spacing';
 
 export const PrayerScreen: React.FC = () => {
-  const { theme, settings, prayers, deletePrayer, markPrayerAnswered } = useApp();
+  const {
+    theme,
+    settings,
+    prayers,
+    deletePrayer,
+    markPrayerAnswered,
+    prayerTimer,
+    showPrayerTimerModal,
+    setShowPrayerTimerModal,
+  } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'answered' | 'waiting'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPrayer, setEditingPrayer] = useState<PrayerItem | null>(null);
-  const [showTimerModal, setShowTimerModal] = useState(false);
 
   // Testimony modal for answered prayer
   const [answeringPrayerId, setAnsweringPrayerId] = useState<string | null>(null);
@@ -100,12 +108,21 @@ export const PrayerScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.timerLaunchBtn, { backgroundColor: theme.primary }]}
-              onPress={() => setShowTimerModal(true)}
+              style={[
+                styles.timerLaunchBtn,
+                { backgroundColor: prayerTimer.isRunning ? '#8B5CF6' : theme.primary },
+              ]}
+              onPress={() => setShowPrayerTimerModal(true)}
               activeOpacity={0.8}
             >
-              <Timer size={14} color="#000" />
-              <Text style={styles.timerLaunchBtnText}>{isTamil ? 'ஜெப நேரம்' : 'Timer'}</Text>
+              <Timer size={14} color={prayerTimer.isRunning ? '#FFF' : '#000'} />
+              <Text style={[styles.timerLaunchBtnText, { color: prayerTimer.isRunning ? '#FFF' : '#000' }]}>
+                {prayerTimer.isRunning
+                  ? `${Math.floor(prayerTimer.secondsLeft / 60)}:${(prayerTimer.secondsLeft % 60).toString().padStart(2, '0')}`
+                  : isTamil
+                  ? 'ஜெப நேரம்'
+                  : 'Timer'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -378,7 +395,7 @@ export const PrayerScreen: React.FC = () => {
           setEditingPrayer(null);
         }}
       />
-      <PrayerTimerModal visible={showTimerModal} onClose={() => setShowTimerModal(false)} />
+      <PrayerTimerModal visible={showPrayerTimerModal} onClose={() => setShowPrayerTimerModal(false)} />
     </View>
   );
 };

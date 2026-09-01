@@ -12,7 +12,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
 import { AuthScreen } from './AuthScreen';
-import { HabitTrackerSection } from '../components/habits/HabitTrackerSection';
+import { TodoSection } from '../components/todo/TodoSection';
 import { FastingRecord, SermonNote, ScriptureMemoryCard } from '../types/spiritual';
 import { SUPPORTED_CURRENCIES } from '../types/finance';
 import {
@@ -35,6 +35,7 @@ import {
   Clock,
   Edit2,
   Zap,
+  CheckSquare,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -66,7 +67,7 @@ export const MoreScreen: React.FC = () => {
 
   const isTamil = settings.displayLanguage === 'ta';
 
-  const [activeSection, setActiveSection] = useState<'habits' | 'fasting' | 'sermons' | 'memory' | 'settings'>('habits');
+  const [activeSection, setActiveSection] = useState<'tasks' | 'fasting' | 'sermons' | 'memory' | 'settings'>('tasks');
 
   // Fasting modal
   const [showStartFastModal, setShowStartFastModal] = useState(false);
@@ -289,15 +290,15 @@ export const MoreScreen: React.FC = () => {
         title={isTamil ? 'ஆவிக்குரிய வளர்ச்சி' : 'Spiritual Growth'}
         subtitle={
           isTamil
-            ? 'உபவாசம் • பிரசங்கம் • மனனம் • அமைப்பு'
-            : 'Fasting • Sermons • Memory • Settings'
+            ? 'பணிகள் • உபவாசம் • பிரசங்கம் • மனனம் • அமைப்பு'
+            : 'To-Do • Fasting • Sermons • Memory • Settings'
         }
       />
 
       {/* Segmented Top Bar */}
       <View style={[styles.sectionTabs, { backgroundColor: theme.cardAlt }]}>
         {[
-          { key: 'habits', icon: Zap, labelEn: 'Habits', labelTa: 'பழக்கங்கள்' },
+          { key: 'tasks', icon: CheckSquare, labelEn: 'To-Do', labelTa: 'பணிகள்' },
           { key: 'fasting', icon: Flame, labelEn: 'Fasting', labelTa: 'உபவாசம்' },
           { key: 'sermons', icon: BookMarked, labelEn: 'Sermons', labelTa: 'பிரசங்கம்' },
           { key: 'memory', icon: Brain, labelEn: 'Memory', labelTa: 'மனனம்' },
@@ -321,10 +322,10 @@ export const MoreScreen: React.FC = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* HABITS TRACKER */}
-        {activeSection === 'habits' && (
+        {/* TO-DO PLANNER */}
+        {activeSection === 'tasks' && (
           <View style={styles.sectionContainer}>
-            <HabitTrackerSection />
+            <TodoSection />
           </View>
         )}
 

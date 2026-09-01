@@ -36,45 +36,27 @@ const PRAYER_PROMPTS = [
 ];
 
 export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onClose }) => {
-  const { theme, settings } = useApp();
+  const {
+    theme,
+    settings,
+    prayerTimer,
+    startPrayerTimer,
+    pausePrayerTimer,
+    resumePrayerTimer,
+    resetPrayerTimer,
+  } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
-  const [selectedMinutes, setSelectedMinutes] = useState(10);
-  const [secondsLeft, setSecondsLeft] = useState(10 * 60);
-  const [isRunning, setIsRunning] = useState(false);
   const [promptIndex, setPromptIndex] = useState(0);
 
+  // Rotate scripture prompts every 25s when running
   useEffect(() => {
-    if (visible) {
-      setSecondsLeft(selectedMinutes * 60);
-      setIsRunning(false);
-    }
-  }, [visible, selectedMinutes]);
-
-  useEffect(() => {
-    let interval: any = null;
-    if (isRunning && secondsLeft > 0) {
-      interval = setInterval(() => {
-        setSecondsLeft((prev) => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, secondsLeft]);
-
-  // Rotate scripture prompts every 30s
-  useEffect(() => {
-    if (!isRunning) return;
+    if (!prayerTimer.isRunning) return;
     const pInterval = setInterval(() => {
       setPromptIndex((prev) => (prev + 1) % PRAYER_PROMPTS.length);
     }, 25000);
     return () => clearInterval(pInterval);
-  }, [isRunning]);
+  }, [prayerTimer.isRunning]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -82,9 +64,16 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleReset = () => {
-    setIsRunning(false);
-    setSecondsLeft(selectedMinutes * 60);
+  const handleToggleRunning = () => {
+    if (prayerTimer.isRunning) {
+      pausePrayerTimer();
+    } else {
+      if (prayerTimer.secondsLeft === 0) {
+        startPrayerTimer(prayerTimer.selectedMinutes);
+      } else {
+        resumePrayerTimer();
+      }
+    }
   };
 
   const currentPrompt = PRAYER_PROMPTS[promptIndex];
@@ -106,10 +95,10 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
         </View>
 
         {/* Minutes Selector */}
-        {!isRunning && secondsLeft === selectedMinutes * 60 && (
+        {!prayerTimer.isRunning && prayerTimer.secondsLeft === prayerTimer.totalSeconds && (
           <View style={styles.durationSelector}>
             {[5, 10, 15, 30].map((mins) => {
-              const isSelected = selectedMinutes === mins;
+              const isSelected = prayerTimer.selectedMinutes === mins;
               return (
                 <TouchableOpacity
                   key={mins}
@@ -120,7 +109,7 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
                       borderColor: isSelected ? theme.primary : theme.cardBorder,
                     },
                   ]}
-                  onPress={() => setSelectedMinutes(mins)}
+                  onPress={() => resetPrayerTimer(mins)}
                 >
                   <Text style={[styles.durationChipText, { color: isSelected ? '#000' : theme.text }]}>
                     {mins} {isTamil ? 'நிமி' : 'min'}
@@ -137,21 +126,21 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
             style={[
               styles.timerRing,
               {
-                borderColor: isRunning ? theme.primary : theme.cardBorder,
+                borderColor: prayerTimer.isRunning ? theme.primary : theme.cardBorder,
                 backgroundColor: theme.card,
                 shadowColor: theme.primary,
-                shadowOpacity: isRunning ? 0.35 : 0.05,
+                shadowOpacity: prayerTimer.isRunning ? 0.35 : 0.05,
                 shadowRadius: 20,
               },
             ]}
           >
-            <Text style={[styles.timeDigits, { color: theme.text }]}>{formatTime(secondsLeft)}</Text>
-            <Text style={[styles.timerStatus, { color: isRunning ? theme.primary : theme.textMuted }]}>
-              {isRunning
+            <Text style={[styles.timeDigits, { color: theme.text }]}>{formatTime(prayerTimer.secondsLeft)}</Text>
+            <Text style={[styles.timerStatus, { color: prayerTimer.isRunning ? theme.primary : theme.textMuted }]}>
+              {prayerTimer.isRunning
                 ? isTamil
                   ? 'தேவ சமூகத்தில் காத்திருத்தல்...'
                   : 'Abiding in His Presence...'
-                : secondsLeft === 0
+                : prayerTimer.secondsLeft === 0
                 ? isTamil
                   ? 'ஜெபம் நிறைவுற்றது! ஆமென்.'
                   : 'Amen! Prayer Completed.'
@@ -174,7 +163,7 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
         <View style={styles.controlsRow}>
           <TouchableOpacity
             style={[styles.controlBtnSecondary, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-            onPress={handleReset}
+            onPress={() => resetPrayerTimer(prayerTimer.selectedMinutes)}
           >
             <RotateCcw size={22} color={theme.textMuted} />
           </TouchableOpacity>
@@ -189,9 +178,13 @@ export const PrayerTimerModal: React.FC<PrayerTimerModalProps> = ({ visible, onC
                 shadowRadius: 10,
               },
             ]}
-            onPress={() => setIsRunning(!isRunning)}
+            onPress={handleToggleRunning}
           >
-            {isRunning ? <Pause size={30} color="#000" /> : <Play size={30} color="#000" style={{ marginLeft: 4 }} />}
+            {prayerTimer.isRunning ? (
+              <Pause size={30} color="#000" />
+            ) : (
+              <Play size={30} color="#000" style={{ marginLeft: 4 }} />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

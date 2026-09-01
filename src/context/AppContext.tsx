@@ -137,6 +137,20 @@ interface AppContextType {
     overallBestStreak: number;
   };
 
+  // Prayer & Devotion Timer (Persists across dashboard)
+  prayerTimer: {
+    isRunning: boolean;
+    secondsLeft: number;
+    totalSeconds: number;
+    selectedMinutes: number;
+  };
+  startPrayerTimer: (minutes?: number) => void;
+  pausePrayerTimer: () => void;
+  resumePrayerTimer: () => void;
+  resetPrayerTimer: (minutes?: number) => void;
+  showPrayerTimerModal: boolean;
+  setShowPrayerTimerModal: (show: boolean) => void;
+
   // Backup & Restore
   exportBackupData: () => Promise<string>;
   importBackupData: (jsonStr: string) => Promise<boolean>;
@@ -165,6 +179,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [habits, setHabits] = useState<Habit[]>(DEFAULT_HABITS);
   const [activeVerseIndex, setActiveVerseIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Global Prayer Timer State
+  const [prayerTimer, setPrayerTimer] = useState({
+    isRunning: false,
+    secondsLeft: 10 * 60,
+    totalSeconds: 10 * 60,
+    selectedMinutes: 10,
+  });
+  const [showPrayerTimerModal, setShowPrayerTimerModal] = useState(false);
 
   // Load all data on mount
   useEffect(() => {
@@ -205,7 +228,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSettings(loadedSettings);
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
-        setHabits(loadedHabits);
+
+        // Sanitize and recompute habit streaks cleanly from today
+        const sanitizedHabits = (loadedHabits || []).map((h: any) => {
+          const streak = calculateStreak(h.completedDates || []);
+          return {
+            ...h,
+            currentStreak: streak,
+            bestStreak: Math.max(h.bestStreak || 0, streak),
+          };
+        });
+        setHabits(sanitizedHabits);
 
         // Filter out any old pre-loaded seed notes so user starts with a completely clean slate
         const cleanNotes = (loadedVerseNotes || []).filter(
@@ -1112,6 +1145,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return success;
   };
 
+  // Background Prayer Timer Ticker
+  useEffect(() => {
+    let interval: any = null;
+    if (prayerTimer.isRunning && prayerTimer.secondsLeft > 0) {
+      interval = setInterval(() => {
+        setPrayerTimer((prev) => {
+          if (prev.secondsLeft <= 1) {
+            return { ...prev, isRunning: false, secondsLeft: 0 };
+          }
+          return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [prayerTimer.isRunning, prayerTimer.secondsLeft]);
+
+  const startPrayerTimer = (minutes?: number) => {
+    const mins = minutes || prayerTimer.selectedMinutes || 10;
+    setPrayerTimer({
+      isRunning: true,
+      selectedMinutes: mins,
+      totalSeconds: mins * 60,
+      secondsLeft: mins * 60,
+    });
+  };
+
+  const pausePrayerTimer = () => {
+    setPrayerTimer((prev) => ({ ...prev, isRunning: false }));
+  };
+
+  const resumePrayerTimer = () => {
+    if (prayerTimer.secondsLeft > 0) {
+      setPrayerTimer((prev) => ({ ...prev, isRunning: true }));
+    }
+  };
+
+  const resetPrayerTimer = (minutes?: number) => {
+    const mins = minutes || prayerTimer.selectedMinutes || 10;
+    setPrayerTimer({
+      isRunning: false,
+      selectedMinutes: mins,
+      totalSeconds: mins * 60,
+      secondsLeft: mins * 60,
+    });
+  };
+
   const dailyVerse = DAILY_VERSES[activeVerseIndex] || DAILY_VERSES[0];
 
   return (
@@ -1179,6 +1260,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateHabit,
         deleteHabit,
         habitStats,
+        prayerTimer,
+        startPrayerTimer,
+        pausePrayerTimer,
+        resumePrayerTimer,
+        resetPrayerTimer,
+        showPrayerTimerModal,
+        setShowPrayerTimerModal,
         exportBackupData,
         importBackupData,
         deleteAccount,

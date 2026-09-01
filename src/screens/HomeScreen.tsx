@@ -52,6 +52,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     habits,
     toggleHabit,
     habitStats,
+    prayerTimer,
+    showPrayerTimerModal,
+    setShowPrayerTimerModal,
   } = useApp();
 
   const isTamil = settings.displayLanguage === 'ta';
@@ -62,7 +65,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [transactionModalType, setTransactionModalType] = useState<TransactionType>('expense');
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const [showTodoModal, setShowTodoModal] = useState(false);
-  const [showTimerModal, setShowTimerModal] = useState(false);
 
   // Habit history modal
   const [selectedHabitForHistory, setSelectedHabitForHistory] = useState<Habit | null>(null);
@@ -114,6 +116,37 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       <Header />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+        {/* ACTIVE LIVE PRAYER TIMER BANNER */}
+        {(prayerTimer.isRunning || (prayerTimer.secondsLeft < prayerTimer.totalSeconds && prayerTimer.secondsLeft > 0)) && (
+          <TouchableOpacity
+            style={[
+              styles.activeTimerBanner,
+              {
+                backgroundColor: prayerTimer.isRunning ? '#8B5CF622' : theme.cardAlt,
+                borderColor: prayerTimer.isRunning ? '#8B5CF6' : theme.cardBorder,
+              },
+              theme.cardShadow,
+            ]}
+            onPress={() => setShowPrayerTimerModal(true)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.timerPulseCircle, { backgroundColor: prayerTimer.isRunning ? '#8B5CF6' : theme.textMuted }]}>
+              <Clock size={16} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.activeTimerTitle, { color: prayerTimer.isRunning ? '#A78BFA' : theme.text }]}>
+                {prayerTimer.isRunning
+                  ? (isTamil ? 'தனி ஜெப நேரம் செயலில் உள்ளது' : 'Quiet Time Prayer Active')
+                  : (isTamil ? 'ஜெப நேரம் இடைநிறுத்தப்பட்டது' : 'Prayer Sanctuary Paused')}
+              </Text>
+              <Text style={[styles.activeTimerCountdown, { color: theme.text }]}>
+                ⏳ {Math.floor(prayerTimer.secondsLeft / 60).toString().padStart(2, '0')}:{(prayerTimer.secondsLeft % 60).toString().padStart(2, '0')} {isTamil ? 'மீதமுள்ளது' : 'remaining'} • {isTamil ? 'தொடர தொடவும் >' : 'Tap to open >'}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={prayerTimer.isRunning ? '#A78BFA' : theme.textMuted} />
+          </TouchableOpacity>
+        )}
+
         {/* ACTIVE FASTING BANNER */}
         {activeFast && (
           <TouchableOpacity
@@ -122,7 +155,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               { backgroundColor: theme.primary + '18', borderColor: theme.primary },
               theme.cardShadow,
             ]}
-            onPress={() => navigation.navigate('Prayer')}
+            onPress={() => navigation.navigate('More')}
             activeOpacity={0.85}
           >
             <Clock size={16} color={theme.primary} />
@@ -236,7 +269,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               { backgroundColor: theme.card, borderColor: theme.cardBorder },
               theme.cardShadow,
             ]}
-            onPress={() => navigation.navigate('More')}
+            onPress={() => navigation.navigate('Habits')}
           >
             <ProgressRing
               size={58}
@@ -261,7 +294,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               { backgroundColor: theme.card, borderColor: theme.cardBorder },
               theme.cardShadow,
             ]}
-            onPress={() => navigation.navigate('Todo')}
+            onPress={() => navigation.navigate('More')}
           >
             <ProgressRing
               size={58}
@@ -319,7 +352,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <TrendingUp size={17} color={theme.incomeColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
-              {isTamil ? 'வரவு' : 'Income'}
+              {isTamil ? 'வருமானம்' : 'Income'}
             </Text>
           </TouchableOpacity>
 
@@ -383,7 +416,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               {isTamil ? 'ஆவிக்குரிய பழக்கங்கள்' : 'Daily Habits & Disciplines'}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('More')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Habits')}>
             <Text style={[styles.seeAllText, { color: theme.primary }]}>
               {habitStats.completedToday}/{publicHabits.length} {isTamil ? 'முடிந்தது' : 'Done'} >
             </Text>
@@ -489,7 +522,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {isTamil ? 'இன்றைய பணிகள்' : 'Today’s Tasks'}
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Todo')}>
+          <TouchableOpacity onPress={() => navigation.navigate('More')}>
             <Text style={[styles.seeAllText, { color: theme.primary }]}>
               {isTamil ? 'அனைத்தும் >' : 'All >'}
             </Text>
@@ -536,38 +569,81 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                     {isTamil && todo.category === 'Spiritual' ? 'ஆவிக்குரியவை' : todo.category}
                   </Text>
                 </View>
+
+                {todo.priority && todo.priority !== 'low' && (
+                  <View
+                    style={[
+                      styles.priorityTag,
+                      {
+                        backgroundColor:
+                          todo.priority === 'urgent'
+                            ? theme.danger + '20'
+                            : todo.priority === 'high'
+                            ? theme.warning + '20'
+                            : theme.primary + '20',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.priorityTagText,
+                        {
+                          color:
+                            todo.priority === 'urgent'
+                              ? theme.danger
+                              : todo.priority === 'high'
+                              ? theme.warning
+                              : theme.primary,
+                        },
+                      ]}
+                    >
+                      {todo.priority}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyBox}>
               <Text style={[styles.emptyText, { color: theme.textMuted }]}>
-                {isTamil ? 'இன்றைய பணிகள் முடிந்தது!' : 'All tasks completed for today!'}
+                {isTamil ? 'இன்றைய பணிகள் எதுவும் இல்லை!' : 'No tasks scheduled for today.'}
               </Text>
             </View>
           )}
         </View>
 
-        {/* FINANCIAL SUMMARY QUICK CARD */}
+        {/* FINANCIAL SUMMARY STRIP (GIVING HIGHLIGHT) */}
         <View style={[styles.financeQuickCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
           <View style={styles.financeQuickHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Wallet size={16} color={theme.balanceColor} />
+              <Wallet size={15} color={theme.titheColor} />
               <Text style={[styles.financeQuickTitle, { color: theme.text }]}>
-                {isTamil ? 'நிதி நிலவரம் (இருப்பு)' : 'Financial Balance'}
+                {isTamil ? 'இந்த மாத நிதி அறிக்கை' : 'Monthly Financial Pulse'}
               </Text>
             </View>
             <TouchableOpacity onPress={() => navigation.navigate('Finance')}>
-              <ArrowUpRight size={16} color={theme.primary} />
+              <Text style={[styles.seeAllText, { color: theme.primary }]}>
+                {isTamil ? 'விவரம் >' : 'Details >'}
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.financeStatsRow}>
             <View style={styles.financeStatCol}>
               <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
-                {isTamil ? 'வரவு' : 'Income'}
+                {isTamil ? 'வருமானம்' : 'Income'}
               </Text>
               <Text style={[styles.financeStatVal, { color: theme.incomeColor }]}>
                 +{currencySym}{financialSummary.monthlyIncome.toLocaleString()}
+              </Text>
+            </View>
+
+            <View style={styles.financeStatCol}>
+              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'தசமபாகம்' : 'Tithe'}
+              </Text>
+              <Text style={[styles.financeStatVal, { color: theme.titheColor }]}>
+                {currencySym}{financialSummary.monthlyTithes.toLocaleString()}
               </Text>
             </View>
 
@@ -577,15 +653,6 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               </Text>
               <Text style={[styles.financeStatVal, { color: theme.expenseColor }]}>
                 -{currencySym}{financialSummary.monthlyExpenses.toLocaleString()}
-              </Text>
-            </View>
-
-            <View style={styles.financeStatCol}>
-              <Text style={[styles.financeStatLabel, { color: theme.textMuted }]}>
-                {isTamil ? 'சேமிப்பு' : 'Savings'}
-              </Text>
-              <Text style={[styles.financeStatVal, { color: theme.balanceColor }]}>
-                {currencySym}{financialSummary.monthlySavings.toLocaleString()}
               </Text>
             </View>
 
@@ -614,7 +681,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       />
       <AddPrayerModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
       <AddTodoModal visible={showTodoModal} onClose={() => setShowTodoModal(false)} />
-      <PrayerTimerModal visible={showTimerModal} onClose={() => setShowTimerModal(false)} />
+      <PrayerTimerModal visible={showPrayerTimerModal} onClose={() => setShowPrayerTimerModal(false)} />
       <HabitHistoryModal
         visible={showHabitHistoryModal}
         habit={selectedHabitForHistory}
@@ -887,5 +954,30 @@ const styles = StyleSheet.create({
   calendarMiniBtn: {
     padding: 5,
     borderRadius: 6,
+  },
+  activeTimerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    marginBottom: spacing.md,
+  },
+  timerPulseCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTimerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  activeTimerCountdown: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });

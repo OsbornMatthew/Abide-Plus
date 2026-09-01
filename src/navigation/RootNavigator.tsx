@@ -9,7 +9,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { BibleScreen } from '../screens/BibleScreen';
 import { PrayerScreen } from '../screens/PrayerScreen';
 import { FinanceScreen } from '../screens/FinanceScreen';
-import { TodoScreen } from '../screens/TodoScreen';
+import { HabitsScreen } from '../screens/HabitsScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 
 // Icons
@@ -18,14 +18,14 @@ import {
   BookOpen,
   Heart,
   Wallet,
-  CheckSquare,
+  Zap,
   Flame,
 } from 'lucide-react-native';
 
 const Tab = createBottomTabNavigator();
 
 export const RootNavigator: React.FC = () => {
-  const { theme, settings, dailyTaskStats, bibleProgress } = useApp();
+  const { theme, settings, habitStats, bibleProgress } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   return (
@@ -112,20 +112,20 @@ export const RootNavigator: React.FC = () => {
         />
 
         <Tab.Screen
-          name="Todo"
-          component={TodoScreen}
+          name="Habits"
+          component={HabitsScreen}
           options={{
-            tabBarLabel: isTamil ? 'பணிகள்' : 'To-Do',
-            tabBarBadge: dailyTaskStats.totalToday > 0 ? `${dailyTaskStats.completedToday}/${dailyTaskStats.totalToday}` : undefined,
+            tabBarLabel: isTamil ? 'பழக்கங்கள்' : 'Habits',
+            tabBarBadge: habitStats.completedToday > 0 ? `${habitStats.completedToday}/${habitStats.totalHabits}` : undefined,
             tabBarBadgeStyle: {
-              backgroundColor: theme.taskColor,
+              backgroundColor: '#8B5CF6',
               color: '#FFF',
               fontSize: 9,
               fontWeight: '800',
             },
             tabBarIcon: ({ color, size, focused }) => (
-              <View style={[styles.iconWrapper, focused && { backgroundColor: theme.primary + '20' }]}>
-                <CheckSquare size={20} color={color} />
+              <View style={[styles.iconWrapper, focused && { backgroundColor: '#8B5CF620' }]}>
+                <Zap size={20} color={color} />
               </View>
             ),
           }}
