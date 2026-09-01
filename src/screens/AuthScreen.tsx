@@ -94,7 +94,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Top Close Button Bar */}
+      {onClose && (
+        <View style={styles.topCloseBar}>
+          <TouchableOpacity
+            style={[styles.closeCircleBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <X size={18} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <ScrollView contentContainerStyle={[styles.scrollContent, !onClose && { paddingTop: spacing.hero }]} showsVerticalScrollIndicator={false}>
         {/* Abide+ Pure Text Header without Icon Box */}
         <View style={styles.logoHeader}>
           <AbideLogo fontSize={38} />
@@ -311,9 +324,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topCloseBar: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  closeCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
   scrollContent: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.hero + 20,
+    paddingTop: spacing.md,
     paddingBottom: spacing.hero,
     alignItems: 'center',
   },

@@ -283,4 +283,14 @@ export const StorageService = {
       return false;
     }
   },
+
+  // Clear all local application data
+  async clearAll(): Promise<void> {
+    try {
+      const keys = Object.values(STORAGE_KEYS);
+      await AsyncStorage.multiRemove(keys);
+    } catch (e) {
+      console.warn("Error clearing local storage:", e);
+    }
+  },
 };

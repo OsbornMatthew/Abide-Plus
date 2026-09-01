@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
+import { AuthScreen } from './AuthScreen';
 import { FastingRecord, SermonNote, ScriptureMemoryCard } from '../types/spiritual';
 import { SUPPORTED_CURRENCIES } from '../types/finance';
 import {
@@ -42,6 +43,8 @@ export const MoreScreen: React.FC = () => {
     updateSettings,
     toggleTheme,
     setCurrency,
+    user,
+    deleteAccount,
     activeFast,
     fastingHistory,
     startFast,
@@ -89,6 +92,34 @@ export const MoreScreen: React.FC = () => {
   // Backup modal
   const [backupJson, setBackupJson] = useState('');
   const [showBackupModal, setShowBackupModal] = useState(false);
+
+  // Auth modal
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleDeleteAccountPrompt = () => {
+    Alert.alert(
+      isTamil ? 'கணக்கை நிரந்தரமாக நீக்கவா?' : 'Delete Account & Cloud Data',
+      isTamil
+        ? 'உங்கள் பயனர் கணக்கு மற்றும் Firebase கிளவுட்டில் உள்ள அனைத்து தரவுகளும் (ஜெபங்கள், குறிப்புகள், வரவு செலவுகள்) நிரந்தரமாக நீக்கப்படும். தொடரவா?'
+        : 'This will permanently delete your account and wipe all your data (prayers, expenses, notes, tasks) from Firebase Cloud. Are you sure you want to proceed?',
+      [
+        { text: isTamil ? 'ரத்து' : 'Cancel', style: 'cancel' },
+        {
+          text: isTamil ? 'ஆம், நீக்கு' : 'Yes, Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteAccount();
+            Alert.alert(
+              isTamil ? 'நீக்கப்பட்டது' : 'Account Deleted',
+              isTamil
+                ? 'உங்கள் கணக்கு மற்றும் கிளவுட் தரவுகள் முழுமையாக நீக்கப்பட்டன.'
+                : 'Your account and cloud data have been completely deleted.'
+            );
+          },
+        },
+      ]
+    );
+  };
 
   const handleStartFastSubmit = async () => {
     await startFast(fastType, parseInt(fastTargetHours) || 24, fastIntention.trim() || 'Seeking the Lord');
@@ -632,6 +663,65 @@ export const MoreScreen: React.FC = () => {
               <ChevronRight size={15} color={theme.textMuted} />
             </TouchableOpacity>
 
+            {/* Cloud Account & Realtime Sync */}
+            <View style={[styles.settingBlock, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>
+                  ☁️ {isTamil ? 'கிளவுட் கணக்கு & நிகழ்நேர ஒத்திசைவு' : 'Account & Realtime Cloud Sync'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: user ? theme.success : theme.textMuted }} />
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: user ? theme.success : theme.textMuted }}>
+                    {user ? (isTamil ? 'நிகழ்நேரம் இயங்குகிறது' : 'Realtime Active') : (isTamil ? 'இணைக்கப்படவில்லை' : 'Not Connected')}
+                  </Text>
+                </View>
+              </View>
+
+              {user ? (
+                <View style={{ gap: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, backgroundColor: theme.cardAlt, borderRadius: borderRadius.md }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: user.avatarColor || theme.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#000', fontWeight: '900', fontSize: 14 }}>{user.displayName.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: theme.text }}>{user.displayName}</Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted }}>{user.email}</Text>
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.accountActionBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, borderWidth: 1 }]}
+                      onPress={() => setShowAuthModal(true)}
+                    >
+                      <Text style={[styles.accountActionBtnText, { color: theme.text }]}>
+                        {isTamil ? 'கணக்கை மாற்று' : 'Switch Account'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.accountActionBtn, { backgroundColor: '#EA433515', borderColor: '#EA4335', borderWidth: 1 }]}
+                      onPress={handleDeleteAccountPrompt}
+                    >
+                      <Trash2 size={13} color="#EA4335" />
+                      <Text style={[styles.accountActionBtnText, { color: '#EA4335', fontWeight: '800' }]}>
+                        {isTamil ? 'கணக்கை நீக்கு' : 'Delete Account'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.backupBtn, { backgroundColor: theme.primary, width: '100%' }]}
+                  onPress={() => setShowAuthModal(true)}
+                >
+                  <Text style={styles.backupBtnText}>
+                    {isTamil ? 'Google / மின்னஞ்சல் மூலம் உள்நுழைக' : 'Sign In with Google / Email'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             {/* Offline JSON Backup */}
             <View style={[styles.settingBlock, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
               <Text style={[styles.settingLabel, { color: theme.text }]}>
@@ -921,6 +1011,11 @@ export const MoreScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Auth / Account Switcher Modal */}
+      <Modal visible={showAuthModal} animationType="slide" onRequestClose={() => setShowAuthModal(false)}>
+        <AuthScreen onClose={() => setShowAuthModal(false)} />
+      </Modal>
     </View>
   );
 };
@@ -928,6 +1023,19 @@ export const MoreScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  accountActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: borderRadius.md,
+  },
+  accountActionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   sectionTabs: {
     flexDirection: 'row',

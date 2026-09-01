@@ -16,6 +16,7 @@ import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   onSnapshot,
   Unsubscribe,
   Firestore
@@ -211,6 +212,27 @@ export const FirebaseSyncService = {
       await signOut(auth);
     } catch (e) {
       console.warn("Firebase sign out error:", e);
+    }
+  },
+
+  // Delete user document from Cloud Firestore and delete Auth account
+  async deleteUserData(userId: string): Promise<boolean> {
+    try {
+      if (!userId) return false;
+      const cleanUserId = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+      const userDocRef = doc(db, "users", cleanUserId);
+      await deleteDoc(userDocRef);
+      if (auth.currentUser) {
+        try {
+          await auth.currentUser.delete();
+        } catch (e) {
+          await signOut(auth);
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn("Error deleting Firestore user data:", e);
+      return false;
     }
   }
 };

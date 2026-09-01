@@ -123,9 +123,12 @@ interface AppContextType {
   startFast: (fastType: FastingRecord['fastType'], targetHours: number, prayerIntention: string) => Promise<void>;
   stopFast: () => Promise<void>;
 
-  // Backup / Export
+  // Backup & Restore
   exportBackupData: () => Promise<string>;
   importBackupData: (jsonStr: string) => Promise<boolean>;
+
+  // Account Deletion & Wipe
+  deleteAccount: () => Promise<void>;
 
   isLoading: boolean;
 }
@@ -417,6 +420,75 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await AuthService.setActiveUser(targetUser);
     setUser(targetUser);
     await updateSettings({ userName: targetUser.displayName });
+    try {
+      const cloud = await FirebaseSyncService.loadUserData(targetUser.id);
+      if (cloud) {
+        if (cloud.prayers && Array.isArray(cloud.prayers)) {
+          setPrayers(cloud.prayers);
+          await StorageService.savePrayers(cloud.prayers);
+        }
+        if (cloud.transactions && Array.isArray(cloud.transactions)) {
+          setTransactions(cloud.transactions);
+          await StorageService.saveTransactions(cloud.transactions);
+        }
+        if (cloud.todos && Array.isArray(cloud.todos)) {
+          setTodos(cloud.todos);
+          await StorageService.saveTodos(cloud.todos);
+        }
+        if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
+          setVerseNotes(cloud.verseNotes);
+          await StorageService.saveVerseNotes(cloud.verseNotes);
+        }
+        if (cloud.sermons && Array.isArray(cloud.sermons)) {
+          setSermons(cloud.sermons);
+          await StorageService.saveSermons(cloud.sermons);
+        }
+        if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
+          setMemoryVerses(cloud.memoryVerses);
+          await StorageService.saveMemoryVerses(cloud.memoryVerses);
+        }
+        if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
+          setFastingRecords(cloud.fastingRecords);
+          await StorageService.saveFastingRecords(cloud.fastingRecords);
+        }
+        if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
+          setBibleBooks(cloud.bibleBooks);
+          await StorageService.saveBibleBooks(cloud.bibleBooks);
+        }
+        if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
+          setReadingPlans(cloud.readingPlans);
+          await StorageService.saveReadingPlans(cloud.readingPlans);
+        }
+        if (cloud.settings && typeof cloud.settings === 'object') {
+          setSettings((prev) => ({ ...prev, ...cloud.settings }));
+          await StorageService.saveSettings(cloud.settings);
+        }
+      }
+    } catch (e) {
+      console.warn("Error loading cloud data on switchUser:", e);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (user?.id) {
+      const uid = user.id;
+      await FirebaseSyncService.deleteUserData(uid);
+      await AuthService.removeSavedUser(uid);
+      await AuthService.logout();
+      setUser(null);
+      const updatedSaved = await AuthService.getSavedUsers();
+      setSavedUsers(updatedSaved);
+      await StorageService.clearAll();
+      setPrayers([]);
+      setTransactions([]);
+      setTodos([]);
+      setVerseNotes([]);
+      setSermons([]);
+      setMemoryVerses([]);
+      setFastingRecords([]);
+      setReadingPlans([]);
+      setSettings(DEFAULT_SETTINGS);
+    }
   };
 
   const removeSavedUser = async (userId: string) => {
@@ -962,6 +1034,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         stopFast,
         exportBackupData,
         importBackupData,
+        deleteAccount,
         isLoading,
       }}
     >
