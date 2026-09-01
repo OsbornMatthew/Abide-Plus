@@ -11,15 +11,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build-apk:
     name: 📱 Build Standalone Android APK
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
-      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
-      ORG_GRADLE_PROJECT_android.enableJetifier: "true"
 
     steps:
       - name: ⬇️ Checkout Repository
@@ -29,6 +32,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: ☕ Setup Java JDK 17 with Gradle Cache
         uses: actions/setup-java@v4
@@ -40,23 +44,23 @@ jobs:
       - name: 📜 Accept Android SDK & NDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
-          echo -e "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1" > "$ANDROID_HOME/licenses/android-sdk-license"
-          echo -e "84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1\n" > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: 📦 Install Node Modules
+      - name: 📦 Install Dependencies
         run: npm install --legacy-peer-deps
 
       - name: 🔑 Set Permissions on Gradle & Hermes Compiler
         run: |
           chmod +x android/gradlew
-          chmod -R +x node_modules/react-native/sdks/hermesc/ || true
+          chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
 
       - name: 🚀 Compile Standalone Android APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace || ./gradlew assembleDebug --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
           cd ..
-          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | head -n 1)
           if [ -z "$APK_FILE" ]; then
             echo "::error::No APK file generated in android/app/build/outputs/apk"
             exit 1
@@ -91,7 +95,9 @@ jobs:
           body: |
             ## 📱 Abide+ Android App Download
 
-            🎉 Your Android APK is ready! Download and install `Abide-Plus.apk` directly on your Android phone.
+            🎉 **Abide+ Standalone Android APK is ready!**
+
+            Download `Abide-Plus.apk` below and install it directly on your Android phone.
 
             ### ✨ Features Included:
             - 📖 Scripture Reader & Note Creator with Chapter Tracker
