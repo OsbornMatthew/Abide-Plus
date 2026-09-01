@@ -50,9 +50,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 📜 Accept Android SDK Licenses
+      - name: 📱 Configure Android SDK & local.properties
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          cat android/local.properties
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: 📦 Install Dependencies
