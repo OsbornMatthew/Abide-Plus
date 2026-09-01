@@ -164,17 +164,44 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <TouchableOpacity style={styles.backdropDismiss} activeOpacity={1} onPress={onClose} />
         <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          {/* Top Sheet Drag Handle */}
+          <View style={styles.sheetHandleBar}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.textMuted + '35' }]} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Heart size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>
-                {isTamil ? 'புதிய பதிவு சேர்க்க' : 'Add Financial Record'}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={[styles.headerIconCircle, { backgroundColor: theme.primary + '18' }]}>
+                {type === 'income' ? (
+                  <ArrowDown size={18} color={theme.incomeColor} />
+                ) : type === 'expense' ? (
+                  <ArrowUp size={18} color={theme.expenseColor} />
+                ) : type === 'savings' ? (
+                  <Coins size={18} color={theme.balanceColor} />
+                ) : (
+                  <Heart size={18} color={theme.primary} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>
+                  {type === 'income'
+                    ? (isTamil ? 'வருமானம் சேர்க்க' : 'Add Income')
+                    : type === 'expense'
+                    ? (isTamil ? 'செலவு பதிய' : 'Log Expense')
+                    : type === 'savings'
+                    ? (isTamil ? 'சேமிப்பு ஒதுக்கீடு' : 'Add Savings')
+                    : (isTamil ? 'தசமபாகம் / காணிக்கை' : 'Tithe & Giving')}
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
+                  {isTamil ? 'காரியஸ்த நிதிப்பதிவு' : 'Stewardship Financial Entry'}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardAlt }]}>
-              <X size={18} color={theme.textMuted} />
+              <X size={18} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -538,34 +565,63 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.42)', // Soft, subtle, non-disturbing dark fade
     justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  backdropDismiss: {
+    ...StyleSheet.absoluteFillObject,
   },
   modalCard: {
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
+    width: '100%',
+    maxWidth: 540,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     borderWidth: 1,
-    maxHeight: '90%',
+    borderBottomWidth: 0,
+    maxHeight: '88%',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xs,
+    paddingBottom: Platform.OS === 'ios' ? 36 : spacing.lg,
   },
-  modalHeader: {
+  sheetHandleBar: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
-  modalTitle: {
-    fontSize: 17,
+  headerIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
     fontWeight: '800',
   },
+  headerSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 1,
+  },
   closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

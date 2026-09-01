@@ -87,7 +87,13 @@ export const AddTodoModal: React.FC<AddTodoModalProps> = ({ visible, onClose }) 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.backdrop}
       >
-        <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <TouchableOpacity style={styles.backdropDismiss} activeOpacity={1} onPress={onClose} />
+        <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+          {/* Sheet Handle */}
+          <View style={styles.sheetHandleBar}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.textMuted + '35' }]} />
+          </View>
+
           {/* Header */}
           <View style={styles.modalHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -97,7 +103,7 @@ export const AddTodoModal: React.FC<AddTodoModalProps> = ({ visible, onClose }) 
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.cardAlt }]}>
-              <X size={18} color={theme.textMuted} />
+              <X size={18} color={theme.text} />
             </TouchableOpacity>
           </View>
 
@@ -290,23 +296,40 @@ export const AddTodoModal: React.FC<AddTodoModalProps> = ({ visible, onClose }) 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.42)', // Soft, non-disturbing subtle fade
     justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  backdropDismiss: {
+    ...StyleSheet.absoluteFillObject,
   },
   modalCard: {
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
+    width: '100%',
+    maxWidth: 540,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     borderWidth: 1,
-    maxHeight: '90%',
+    borderBottomWidth: 0,
+    maxHeight: '88%',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xs,
+    paddingBottom: Platform.OS === 'ios' ? 36 : spacing.lg,
+  },
+  sheetHandleBar: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
   modalTitle: {
     fontSize: 18,
