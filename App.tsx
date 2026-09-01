@@ -7,7 +7,7 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { AbideLogo } from './src/components/common/AbideLogo';
 
 const MainApp: React.FC = () => {
-  const { settings, theme, user, isLoading } = useApp();
+  const { settings, theme, isLoading } = useApp();
 
   if (isLoading) {
     return (
@@ -18,19 +18,6 @@ const MainApp: React.FC = () => {
         />
         <AbideLogo fontSize={28} />
         <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 16 }} />
-      </View>
-    );
-  }
-
-  // Registration & Authentication Gate: User MUST register or log in before accessing the app
-  if (!user) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <StatusBar
-          barStyle={settings.isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={theme.background}
-        />
-        <AuthScreen />
       </View>
     );
   }

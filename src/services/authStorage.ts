@@ -6,14 +6,23 @@ const STORAGE_KEYS = {
   SAVED_USERS: '@abide_saved_users_list',
 };
 
+const DEFAULT_PILGRIM: UserProfile = {
+  id: 'pilgrim-default-user',
+  email: 'pilgrim@abide.plus',
+  displayName: 'Pilgrim',
+  avatarColor: '#F59E0B',
+  createdAt: new Date().toISOString(),
+  lastLoginAt: new Date().toISOString(),
+};
+
 export const AuthService = {
   async getActiveUser(): Promise<UserProfile | null> {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
       if (data) return JSON.parse(data);
-      return null;
+      return DEFAULT_PILGRIM;
     } catch {
-      return null;
+      return DEFAULT_PILGRIM;
     }
   },
 

@@ -20,6 +20,8 @@ import {
 import { TodoTask } from '../types/todo';
 import { UserProfile } from '../types/auth';
 import { Habit, DEFAULT_HABITS } from '../types/habit';
+import { DecisionWheel, DecisionResult } from '../types/decision';
+import { DEFAULT_DECISION_WHEELS } from '../data/defaultWheels';
 import { AppSettings, DEFAULT_SETTINGS, StorageService } from '../services/storage';
 import { AuthService } from '../services/authStorage';
 import { FirebaseSyncService, UserCloudData } from '../services/firebase';
@@ -152,6 +154,17 @@ interface AppContextType {
   showPrayerTimerModal: boolean;
   setShowPrayerTimerModal: (show: boolean) => void;
 
+  // Decision Maker Wheel & History
+  decisionWheels: DecisionWheel[];
+  decisionResults: DecisionResult[];
+  activeWheelId: string;
+  setActiveWheelId: (id: string) => void;
+  addDecisionWheel: (wheel: Omit<DecisionWheel, 'id' | 'createdAt'>) => Promise<void>;
+  updateDecisionWheel: (id: string, updates: Partial<DecisionWheel>) => Promise<void>;
+  deleteDecisionWheel: (id: string) => Promise<void>;
+  recordDecisionResult: (result: Omit<DecisionResult, 'id' | 'timestamp'>) => Promise<void>;
+  clearDecisionHistory: () => Promise<void>;
+
   // Backup & Restore
   exportBackupData: () => Promise<string>;
   importBackupData: (jsonStr: string) => Promise<boolean>;
@@ -178,6 +191,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [memoryVerses, setMemoryVerses] = useState<ScriptureMemoryCard[]>([]);
   const [fastingRecords, setFastingRecords] = useState<FastingRecord[]>([]);
   const [habits, setHabits] = useState<Habit[]>(DEFAULT_HABITS);
+  const [decisionWheels, setDecisionWheels] = useState<DecisionWheel[]>(DEFAULT_DECISION_WHEELS);
+  const [decisionResults, setDecisionResults] = useState<DecisionResult[]>([]);
+  const [activeWheelId, setActiveWheelId] = useState<string>(DEFAULT_DECISION_WHEELS[0]?.id || 'wheel-scripture-study');
 
   // Deterministic 1 Verse per day based on calendar day-of-year
   const todayVerseIndex = useMemo(() => {
@@ -219,6 +235,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           loadedMemoryVerses,
           loadedFasts,
           loadedHabits,
+          loadedWheels,
+          loadedResults,
         ] = await Promise.all([
           AuthService.getActiveUser(),
           AuthService.getSavedUsers(),
@@ -233,6 +251,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           StorageService.getMemoryVerses(),
           StorageService.getFastingRecords(),
           StorageService.getHabits(),
+          StorageService.getDecisionWheels(),
+          StorageService.getDecisionResults(),
         ]);
 
         setUser(activeUser);
@@ -319,6 +339,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSermons(loadedSermons);
         setMemoryVerses(loadedMemoryVerses);
         setFastingRecords(loadedFasts);
+        if (loadedWheels && loadedWheels.length > 0) {
+          setDecisionWheels(loadedWheels);
+          setActiveWheelId(loadedWheels[0].id);
+        }
+        if (loadedResults) {
+          setDecisionResults(loadedResults);
+        }
 
         // Day of year based index
         const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
@@ -1132,6 +1159,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [habits]);
 
+  // Decision Maker Wheel Functions
+  const addDecisionWheel = async (wheel: Omit<DecisionWheel, 'id' | 'createdAt'>) => {
+    const newWheel: DecisionWheel = {
+      ...wheel,
+      id: 'wheel-' + Date.now(),
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newWheel, ...decisionWheels];
+    setDecisionWheels(updated);
+    setActiveWheelId(newWheel.id);
+    await StorageService.saveDecisionWheels(updated);
+    syncUserCloud({ decisionWheels: updated } as any);
+  };
+
+  const updateDecisionWheel = async (id: string, updates: Partial<DecisionWheel>) => {
+    const updated = decisionWheels.map((w) => (w.id === id ? { ...w, ...updates } : w));
+    setDecisionWheels(updated);
+    await StorageService.saveDecisionWheels(updated);
+    syncUserCloud({ decisionWheels: updated } as any);
+  };
+
+  const deleteDecisionWheel = async (id: string) => {
+    const updated = decisionWheels.filter((w) => w.id !== id);
+    const safeList = updated.length > 0 ? updated : DEFAULT_DECISION_WHEELS;
+    setDecisionWheels(safeList);
+    if (activeWheelId === id) {
+      setActiveWheelId(safeList[0].id);
+    }
+    await StorageService.saveDecisionWheels(safeList);
+    syncUserCloud({ decisionWheels: safeList } as any);
+  };
+
+  const recordDecisionResult = async (result: Omit<DecisionResult, 'id' | 'timestamp'>) => {
+    const newResult: DecisionResult = {
+      ...result,
+      id: 'res-' + Date.now(),
+      timestamp: new Date().toISOString(),
+    };
+    const updated = [newResult, ...decisionResults];
+    setDecisionResults(updated);
+    await StorageService.saveDecisionResults(updated);
+    syncUserCloud({ decisionResults: updated } as any);
+  };
+
+  const clearDecisionHistory = async () => {
+    setDecisionResults([]);
+    await StorageService.saveDecisionResults([]);
+    syncUserCloud({ decisionResults: [] } as any);
+  };
+
   // Backup & Restore
   const exportBackupData = async () => {
     return await StorageService.exportFullBackup();
@@ -1152,6 +1229,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         loadedMemoryVerses,
         loadedFasts,
         loadedHabits,
+        loadedWheels,
+        loadedResults,
       ] = await Promise.all([
         StorageService.getSettings(),
         StorageService.getBibleBooks(),
@@ -1164,6 +1243,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         StorageService.getMemoryVerses(),
         StorageService.getFastingRecords(),
         StorageService.getHabits(),
+        StorageService.getDecisionWheels(),
+        StorageService.getDecisionResults(),
       ]);
       setSettings(loadedSettings);
       setBibleBooks(loadedBooks);
@@ -1176,6 +1257,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setMemoryVerses(loadedMemoryVerses);
       setFastingRecords(loadedFasts);
       setHabits(loadedHabits);
+      if (loadedWheels && loadedWheels.length > 0) {
+        setDecisionWheels(loadedWheels);
+        setActiveWheelId(loadedWheels[0].id);
+      }
+      if (loadedResults) {
+        setDecisionResults(loadedResults);
+      }
     }
     return success;
   };
@@ -1298,6 +1386,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateHabit,
         deleteHabit,
         habitStats,
+        decisionWheels,
+        decisionResults,
+        activeWheelId,
+        setActiveWheelId,
+        addDecisionWheel,
+        updateDecisionWheel,
+        deleteDecisionWheel,
+        recordDecisionResult,
+        clearDecisionHistory,
         prayerTimer,
         startPrayerTimer,
         pausePrayerTimer,

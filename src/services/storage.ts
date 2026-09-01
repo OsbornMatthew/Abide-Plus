@@ -26,6 +26,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   userName: 'Faithful Servant',
 };
 
+import { DEFAULT_DECISION_WHEELS } from '../data/defaultWheels';
+import { DecisionWheel, DecisionResult } from '../types/decision';
+
 const STORAGE_KEYS = {
   SETTINGS: '@abide_settings',
   BIBLE_BOOKS: '@abide_bible_books',
@@ -41,6 +44,8 @@ const STORAGE_KEYS = {
   TODOS: '@abide_todos',
   READ_HISTORY: '@abide_read_history',
   HABITS: '@abide_habits',
+  DECISION_WHEELS: '@abide_decision_wheels',
+  DECISION_RESULTS: '@abide_decision_results',
 };
 
 // Clean default slate for user
@@ -249,9 +254,46 @@ export const StorageService = {
     await AsyncStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
   },
 
+  // Decision Wheels Storage
+  async getDecisionWheels(): Promise<DecisionWheel[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_WHEELS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      await this.saveDecisionWheels(DEFAULT_DECISION_WHEELS);
+      return DEFAULT_DECISION_WHEELS;
+    } catch {
+      return DEFAULT_DECISION_WHEELS;
+    }
+  },
+
+  async saveDecisionWheels(wheels: DecisionWheel[]): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.DECISION_WHEELS, JSON.stringify(wheels));
+  },
+
+  // Decision History Results Storage
+  async getDecisionResults(): Promise<DecisionResult[]> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_RESULTS);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
+  async saveDecisionResults(results: DecisionResult[]): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.DECISION_RESULTS, JSON.stringify(results));
+  },
+
   // Export full backup as JSON
   async exportFullBackup(): Promise<string> {
-    const [settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits] = await Promise.all([
+    const [settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits, decisionWheels, decisionResults] = await Promise.all([
       this.getSettings(),
       this.getBibleBooks(),
       this.getReadingPlans(),
@@ -263,10 +305,12 @@ export const StorageService = {
       this.getMemoryVerses(),
       this.getFastingRecords(),
       this.getHabits(),
+      this.getDecisionWheels(),
+      this.getDecisionResults(),
     ]);
 
     const backup = {
-      version: '1.2',
+      version: '1.3',
       exportedAt: new Date().toISOString(),
       appName: 'Abide+',
       data: {
@@ -281,6 +325,8 @@ export const StorageService = {
         memoryVerses,
         fasts,
         habits,
+        decisionWheels,
+        decisionResults,
       },
     };
     return JSON.stringify(backup, null, 2);
@@ -291,7 +337,7 @@ export const StorageService = {
     try {
       const parsed = JSON.parse(jsonString);
       if (!parsed.data) return false;
-      const { settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits } = parsed.data;
+      const { settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits, decisionWheels, decisionResults } = parsed.data;
       if (settings) await this.saveSettings(settings);
       if (books) await this.saveBibleBooks(books);
       if (plans) await this.saveReadingPlans(plans);
@@ -303,6 +349,8 @@ export const StorageService = {
       if (memoryVerses) await this.saveMemoryVerses(memoryVerses);
       if (fasts) await this.saveFastingRecords(fasts);
       if (habits) await this.saveHabits(habits);
+      if (decisionWheels) await this.saveDecisionWheels(decisionWheels);
+      if (decisionResults) await this.saveDecisionResults(decisionResults);
       return true;
     } catch {
       return false;

@@ -14,7 +14,12 @@ import { Header } from '../components/common/Header';
 import { AuthScreen } from './AuthScreen';
 import { TodoSection } from '../components/todo/TodoSection';
 import { FastingRecord, SermonNote, ScriptureMemoryCard } from '../types/spiritual';
+import { DecisionWheel } from '../types/decision';
 import { SUPPORTED_CURRENCIES } from '../types/finance';
+import { DecisionWheelView } from '../components/decision/DecisionWheelView';
+import { EditWheelModal } from '../components/modals/EditWheelModal';
+import { DecisionHistoryModal } from '../components/modals/DecisionHistoryModal';
+import { AccountDetailsModal } from '../components/modals/AccountDetailsModal';
 import {
   Flame,
   BookMarked,
@@ -36,6 +41,9 @@ import {
   Edit2,
   Zap,
   CheckSquare,
+  Disc,
+  Shield,
+  User,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -68,7 +76,15 @@ export const MoreScreen: React.FC = () => {
 
   const isTamil = settings.displayLanguage === 'ta';
 
-  const [activeSection, setActiveSection] = useState<'tasks' | 'fasting' | 'sermons' | 'memory' | 'settings'>('tasks');
+  const [activeSection, setActiveSection] = useState<'tasks' | 'fasting' | 'decision' | 'sermons' | 'memory' | 'settings'>('tasks');
+
+  // Decision Wheel Modals
+  const [showEditWheelModal, setShowEditWheelModal] = useState(false);
+  const [wheelToEdit, setWheelToEdit] = useState<DecisionWheel | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // Account Details Modal
+  const [showAccountDetailsModal, setShowAccountDetailsModal] = useState(false);
 
   // Fasting modal
   const [showStartFastModal, setShowStartFastModal] = useState(false);
@@ -244,19 +260,72 @@ export const MoreScreen: React.FC = () => {
   };
 
   const handleExport = async () => {
-    const data = await exportBackupData();
-    setBackupJson(data);
-    setShowBackupModal(true);
+    try {
+      const data = await exportBackupData();
+      setBackupJson(data);
+      if (Platform.OS === 'web') {
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.href = url;
+        a.download = `abide_plus_backup_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        Alert.alert('Backup Exported', isTamil ? 'காப்புப்பிரதி கோப்பு பதிவிறக்கம் செய்யப்பட்டது!' : 'Backup JSON file downloaded successfully!');
+      } else {
+        setShowBackupModal(true);
+      }
+    } catch (e) {
+      console.error('Export error', e);
+      setShowBackupModal(true);
+    }
   };
 
   const handleImport = async () => {
-    if (!backupJson.trim()) return;
+    if (!backupJson.trim()) {
+      Alert.alert('Required', isTamil ? 'காப்புப்பிரதி JSON உள்ளிடவும்.' : 'Please paste valid JSON backup content.');
+      return;
+    }
     const ok = await importBackupData(backupJson);
     if (ok) {
       setShowBackupModal(false);
-      Alert.alert('Success', 'Backup restored successfully!');
+      Alert.alert('Success', isTamil ? 'காப்புப்பிரதி வெற்றிகரமாக மீட்டமைக்கப்பட்டது!' : 'Backup restored successfully! All prayers, habits, and finances updated.');
     } else {
-      Alert.alert('Error', 'Invalid JSON backup format.');
+      Alert.alert('Error', isTamil ? 'செல்லுபடியாகாத JSON வடிவம்.' : 'Invalid JSON backup format.');
+    }
+  };
+
+  const handleWebFileSelect = () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = (event: any) => {
+        const file = event.target?.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const text = e.target?.result as string;
+            if (text) {
+              setBackupJson(text);
+              const ok = await importBackupData(text);
+              if (ok) {
+                Alert.alert('Success', isTamil ? 'காப்புப்பிரதி வெற்றிகரமாக மீட்டமைக்கப்பட்டது!' : 'Backup restored successfully from file!');
+                setShowBackupModal(false);
+              } else {
+                Alert.alert('Error', isTamil ? 'செல்லுபடியாகாத JSON வடிவம்.' : 'Invalid JSON backup file.');
+              }
+            }
+          };
+          reader.readAsText(file);
+        }
+      };
+      input.click();
+    } else {
+      setShowBackupModal(true);
     }
   };
 
@@ -291,8 +360,8 @@ export const MoreScreen: React.FC = () => {
         title={isTamil ? 'ஆவிக்குரிய வளர்ச்சி' : 'Spiritual Growth'}
         subtitle={
           isTamil
-            ? 'பணிகள் • உபவாசம் • பிரசங்கம் • மனனம் • அமைப்பு'
-            : 'To-Do • Fasting • Sermons • Memory • Settings'
+            ? 'பணிகள் • உபவாசம் • சக்கரம் • பிரசங்கம் • மனனம் • அமைப்பு'
+            : 'To-Do • Fasting • Wheel • Sermons • Memory • Settings'
         }
       />
 
@@ -301,6 +370,7 @@ export const MoreScreen: React.FC = () => {
         {[
           { key: 'tasks', icon: CheckSquare, labelEn: 'To-Do', labelTa: 'பணிகள்' },
           { key: 'fasting', icon: Flame, labelEn: 'Fasting', labelTa: 'உபவாசம்' },
+          { key: 'decision', icon: Disc, labelEn: 'Wheel', labelTa: 'சக்கரம்' },
           { key: 'sermons', icon: BookMarked, labelEn: 'Sermons', labelTa: 'பிரசங்கம்' },
           { key: 'memory', icon: Brain, labelEn: 'Memory', labelTa: 'மனனம்' },
           { key: 'settings', icon: Settings, labelEn: 'Settings', labelTa: 'அமைப்பு' },
@@ -475,6 +545,23 @@ export const MoreScreen: React.FC = () => {
                 </Text>
               )}
             </View>
+          </View>
+        )}
+
+        {/* DECISION MAKER WHEEL */}
+        {activeSection === 'decision' && (
+          <View style={styles.sectionContainer}>
+            <DecisionWheelView
+              onOpenCreateWheel={() => {
+                setWheelToEdit(null);
+                setShowEditWheelModal(true);
+              }}
+              onOpenEditWheel={(w) => {
+                setWheelToEdit(w);
+                setShowEditWheelModal(true);
+              }}
+              onOpenHistory={() => setShowHistoryModal(true)}
+            />
           </View>
         )}
 
@@ -736,20 +823,22 @@ export const MoreScreen: React.FC = () => {
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity
                       style={[styles.accountActionBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, borderWidth: 1 }]}
-                      onPress={() => setShowAuthModal(true)}
+                      onPress={() => setShowAccountDetailsModal(true)}
                     >
+                      <Shield size={14} color={theme.primary} />
                       <Text style={[styles.accountActionBtnText, { color: theme.text }]}>
-                        {isTamil ? 'கணக்கை மாற்று' : 'Switch Account'}
+                        {isTamil ? 'கணக்கு விவரங்கள்' : 'Account Details'}
                       </Text>
+                      <ChevronRight size={13} color={theme.textMuted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.accountActionBtn, { backgroundColor: '#EA433515', borderColor: '#EA4335', borderWidth: 1 }]}
-                      onPress={handleDeleteAccountPrompt}
+                      style={[styles.accountActionBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, borderWidth: 1 }]}
+                      onPress={() => setShowAuthModal(true)}
                     >
-                      <Trash2 size={13} color="#EA4335" />
-                      <Text style={[styles.accountActionBtnText, { color: '#EA4335', fontWeight: '800' }]}>
-                        {isTamil ? 'கணக்கை நீக்கு' : 'Delete Account'}
+                      <User size={14} color={theme.text} />
+                      <Text style={[styles.accountActionBtnText, { color: theme.text }]}>
+                        {isTamil ? 'மாற்று' : 'Switch'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -768,8 +857,18 @@ export const MoreScreen: React.FC = () => {
 
             {/* Offline JSON Backup */}
             <View style={[styles.settingBlock, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
-              <Text style={[styles.settingLabel, { color: theme.text }]}>
-                🔒 {isTamil ? 'ஆஃப்லைன் காப்புப்பிரதி' : 'Offline Backup (JSON)'}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <Text style={[styles.settingLabel, { color: theme.text }]}>
+                  🔒 {isTamil ? 'ஆஃப்லைன் காப்புப்பிரதி (JSON)' : 'Offline Backup (JSON)'}
+                </Text>
+                <Text style={{ fontSize: 10.5, color: theme.primary, fontWeight: '700' }}>
+                  {isTamil ? 'பதிவிறக்கம் / பதிவேற்றம்' : 'Export / Import File'}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, color: theme.textMuted, marginBottom: 10 }}>
+                {isTamil
+                  ? 'உங்கள் அனைத்து ஜெபங்கள், வரவு செலவு, பழக்கங்கள் மற்றும் சக்கரங்களை JSON கோப்பாக பாதுகாப்பாக சேமிக்கவும்.'
+                  : 'Download or upload your complete prayers, transactions, habits, and decision wheels as a JSON backup file.'}
               </Text>
               <View style={styles.backupBtnsRow}>
                 <TouchableOpacity
@@ -777,16 +876,16 @@ export const MoreScreen: React.FC = () => {
                   onPress={handleExport}
                 >
                   <Download size={15} color="#000" />
-                  <Text style={styles.backupBtnText}>{isTamil ? 'Export' : 'Export JSON'}</Text>
+                  <Text style={styles.backupBtnText}>{isTamil ? 'கோப்பு பதிவிறக்கம்' : 'Download File'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.backupBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, borderWidth: 1 }]}
-                  onPress={() => setShowBackupModal(true)}
+                  onPress={handleWebFileSelect}
                 >
                   <Upload size={15} color={theme.text} />
                   <Text style={[styles.backupBtnText, { color: theme.text }]}>
-                    {isTamil ? 'Import' : 'Import JSON'}
+                    {isTamil ? 'கோப்பு பதிவேற்று' : 'Upload File'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1055,6 +1154,29 @@ export const MoreScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Decision Wheel Modal */}
+      <EditWheelModal
+        visible={showEditWheelModal}
+        onClose={() => {
+          setShowEditWheelModal(false);
+          setWheelToEdit(null);
+        }}
+        wheelToEdit={wheelToEdit}
+      />
+
+      {/* Decision History Modal */}
+      <DecisionHistoryModal
+        visible={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+      />
+
+      {/* Account Details & Security Modal */}
+      <AccountDetailsModal
+        visible={showAccountDetailsModal}
+        onClose={() => setShowAccountDetailsModal(false)}
+        onOpenSwitchAccount={() => setShowAuthModal(true)}
+      />
 
       {/* Auth / Account Switcher Modal */}
       <Modal visible={showAuthModal} animationType="slide" onRequestClose={() => setShowAuthModal(false)}>
