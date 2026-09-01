@@ -123,6 +123,7 @@ interface AppContextType {
   fastingHistory: FastingRecord[];
   startFast: (fastType: FastingRecord['fastType'], targetHours: number, prayerIntention: string) => Promise<void>;
   stopFast: () => Promise<void>;
+  deleteFastingRecord: (id: string) => Promise<void>;
 
   // Habit Tracker & Daily Disciplines
   habits: Habit[];
@@ -177,7 +178,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [memoryVerses, setMemoryVerses] = useState<ScriptureMemoryCard[]>([]);
   const [fastingRecords, setFastingRecords] = useState<FastingRecord[]>([]);
   const [habits, setHabits] = useState<Habit[]>(DEFAULT_HABITS);
-  const [activeVerseIndex, setActiveVerseIndex] = useState(0);
+
+  // Deterministic 1 Verse per day based on calendar day-of-year
+  const todayVerseIndex = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    return Math.abs(dayOfYear) % DAILY_VERSES.length;
+  }, []);
+
+  const [activeVerseIndex, setActiveVerseIndex] = useState<number>(todayVerseIndex);
   const [isLoading, setIsLoading] = useState(true);
 
   // Global Prayer Timer State
@@ -1006,6 +1018,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ fastingRecords: updated });
   };
 
+  const deleteFastingRecord = async (id: string) => {
+    const updated = fastingRecords.filter((f) => f.id !== id);
+    setFastingRecords(updated);
+    await StorageService.saveFastingRecords(updated);
+    syncUserCloud({ fastingRecords: updated });
+  };
+
   // Habit Helper: Calculate Streak
   const calculateStreak = (dates: string[]): number => {
     if (!dates || dates.length === 0) return 0;
@@ -1209,7 +1228,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  const dailyVerse = DAILY_VERSES[activeVerseIndex] || DAILY_VERSES[0];
+  const dailyVerse = DAILY_VERSES[activeVerseIndex] || DAILY_VERSES[todayVerseIndex] || DAILY_VERSES[0];
 
   return (
     <AppContext.Provider
@@ -1245,17 +1264,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         prayers,
         addPrayer,
         updatePrayer,
-        markPrayerAnswered,
         deletePrayer,
+        markPrayerAnswered,
         transactions,
         addTransaction,
+        updateTransaction,
         deleteTransaction,
         financialSummary,
         todos,
         addTodo,
-        toggleTodo,
+        updateTodo,
         deleteTodo,
-        toggleSubtask,
+        toggleTodo,
+        toggleSubTask,
         dailyTaskStats,
         sermons,
         addSermon,
@@ -1270,6 +1291,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fastingHistory: fastingRecords,
         startFast,
         stopFast,
+        deleteFastingRecord,
         habits,
         toggleHabit,
         addHabit,

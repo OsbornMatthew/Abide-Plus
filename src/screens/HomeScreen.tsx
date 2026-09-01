@@ -172,7 +172,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         )}
 
-        {/* ELEGANT, CLEAN VERSE OF THE DAY CARD */}
+        {/* ULTRA-ELEGANT CLEAN VERSE OF THE DAY CARD */}
         <TouchableOpacity
           style={[
             styles.elegantVodCard,
@@ -184,20 +184,23 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         >
           {/* Top Bar with Date Badge & History Button */}
           <View style={styles.vodTopBar}>
-            <View style={[styles.vodDateBadge, { backgroundColor: theme.primary + '20' }]}>
-              <Sparkles size={12} color={theme.primary} />
+            <View style={[styles.vodDateBadge, { backgroundColor: theme.primary + '18' }]}>
+              <Sparkles size={13} color={theme.primary} />
               <Text style={[styles.vodDateText, { color: theme.primary }]}>
-                {isTamil ? `இன்று • ${todayFormatted}` : `Today • ${todayFormatted}`}
+                {isTamil ? 'இன்றைய வேத வசனம்' : 'VERSE OF THE DAY'} • {todayFormatted}
               </Text>
             </View>
 
             <View style={styles.vodActionIcons}>
-              <View style={[styles.historyPill, { backgroundColor: theme.cardAlt }]}>
-                <History size={11} color={theme.primary} />
-                <Text style={[styles.historyPillText, { color: theme.primary }]}>
+              <TouchableOpacity
+                onPress={() => setShowPreviousVersesModal(true)}
+                style={[styles.historyPill, { backgroundColor: theme.cardAlt }]}
+              >
+                <History size={12} color={theme.textMuted} />
+                <Text style={[styles.historyPillText, { color: theme.textMuted }]}>
                   {isTamil ? 'முந்தையவை' : 'Archive'}
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               <TouchableOpacity onPress={handleShareVerse} style={[styles.iconButton, { backgroundColor: theme.cardAlt }]}>
                 <Share2 size={12} color={theme.primary} />
@@ -205,29 +208,36 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Tamil Scripture */}
-          <Text style={[styles.tamilVerseText, { color: theme.text }]}>
-            "{dailyVerse.textTa}"
-          </Text>
-          <Text style={[styles.tamilRefText, { color: theme.primary }]}>
-            {dailyVerse.referenceTa} (TAOVBSI)
-          </Text>
+          {/* Elegant Scripture Presentation */}
+          <View style={styles.vodBodyRow}>
+            <View style={[styles.vodAccentLine, { backgroundColor: theme.primary }]} />
+            <View style={{ flex: 1 }}>
+              {/* Primary Scripture */}
+              <Text style={[styles.primaryVerseText, { color: theme.text }]}>
+                "{isTamil ? dailyVerse.textTa : dailyVerse.textEn}"
+              </Text>
 
-          {/* English Scripture */}
-          <View style={[styles.englishBox, { borderTopColor: theme.cardBorder }]}>
-            <Text style={[styles.englishVerseText, { color: theme.textLight }]}>
-              "{dailyVerse.textEn}"
-            </Text>
-            <Text style={[styles.englishRefText, { color: theme.primaryLight }]}>
-              {dailyVerse.referenceEn} (NIV)
-            </Text>
+              {/* Graceful Secondary Parallel Translation */}
+              <Text style={[styles.secondaryVerseText, { color: theme.textMuted }]}>
+                "{isTamil ? dailyVerse.textEn : dailyVerse.textTa}"
+              </Text>
+            </View>
           </View>
 
-          {/* Short Devotional Thought */}
-          <View style={[styles.devotionalBar, { backgroundColor: theme.cardAlt }]}>
-            <Text style={[styles.devotionalBarText, { color: theme.textMuted }]} numberOfLines={2}>
-              💡 {isTamil ? dailyVerse.reflectionTa : dailyVerse.reflectionEn}
-            </Text>
+          {/* Reference & Reflection Bottom Row */}
+          <View style={styles.vodBottomRow}>
+            <View style={[styles.referenceBadge, { backgroundColor: theme.primary + '18', borderColor: theme.primary + '35' }]}>
+              <Text style={[styles.referenceBadgeText, { color: theme.primary }]}>
+                📖 {isTamil ? `${dailyVerse.referenceTa} (TAOVBSI)` : `${dailyVerse.referenceEn} (NIV)`}
+              </Text>
+            </View>
+
+            {/* Short Devotional Thought */}
+            <View style={[styles.reflectionPill, { backgroundColor: theme.cardAlt }]}>
+              <Text style={[styles.reflectionPillText, { color: theme.textMuted }]} numberOfLines={1}>
+                💡 {isTamil ? dailyVerse.reflectionTa : dailyVerse.reflectionEn}
+              </Text>
+            </View>
           </View>
         </TouchableOpacity>
 
@@ -728,7 +738,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm + 2,
+    marginBottom: spacing.sm + 4,
   },
   vodDateBadge: {
     flexDirection: 'row',
@@ -739,8 +749,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.pill,
   },
   vodDateText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   vodActionIcons: {
     flexDirection: 'row',
@@ -757,7 +768,7 @@ const styles = StyleSheet.create({
   },
   historyPillText: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   iconButton: {
     width: 26,
@@ -766,40 +777,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tamilVerseText: {
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 23,
+  vodBodyRow: {
+    flexDirection: 'row',
+    gap: spacing.sm + 2,
+    marginBottom: spacing.sm + 2,
   },
-  tamilRefText: {
-    fontSize: 12,
-    fontWeight: '800',
-    marginTop: 4,
-    marginBottom: 6,
-  },
-  englishBox: {
-    borderTopWidth: 1,
-    paddingTop: 6,
+  vodAccentLine: {
+    width: 3.5,
+    borderRadius: 2,
     marginTop: 2,
+    marginBottom: 2,
   },
-  englishVerseText: {
-    fontSize: 13,
+  primaryVerseText: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 24,
+    letterSpacing: -0.2,
+  },
+  secondaryVerseText: {
+    fontSize: 12.5,
     fontStyle: 'italic',
-    lineHeight: 19,
+    lineHeight: 18,
+    marginTop: 4,
   },
-  englishRefText: {
-    fontSize: 11,
-    fontWeight: '700',
+  vodBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
     marginTop: 2,
   },
-  devotionalBar: {
-    marginTop: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: borderRadius.md,
+  referenceBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
   },
-  devotionalBarText: {
+  referenceBadgeText: {
     fontSize: 11,
-    lineHeight: 16,
+    fontWeight: '800',
+  },
+  reflectionPill: {
+    flex: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: borderRadius.pill,
+  },
+  reflectionPillText: {
+    fontSize: 10.5,
+    fontWeight: '600',
   },
   sectionHeaderRow: {
     flexDirection: 'row',

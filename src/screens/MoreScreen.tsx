@@ -52,6 +52,7 @@ export const MoreScreen: React.FC = () => {
     fastingHistory,
     startFast,
     stopFast,
+    deleteFastingRecord,
     sermons,
     addSermon,
     updateSermon,
@@ -347,13 +348,22 @@ export const MoreScreen: React.FC = () => {
                     </View>
                   </View>
 
-                  <TouchableOpacity
-                    style={[styles.stopFastBtn, { backgroundColor: theme.danger }]}
-                    onPress={stopFast}
-                  >
-                    <Square size={13} color="#FFF" />
-                    <Text style={styles.stopFastBtnText}>{isTamil ? 'முடிக்க' : 'End Fast'}</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <TouchableOpacity
+                      style={[styles.stopFastBtn, { backgroundColor: theme.danger }]}
+                      onPress={stopFast}
+                    >
+                      <Square size={13} color="#FFF" />
+                      <Text style={styles.stopFastBtnText}>{isTamil ? 'முடிக்க' : 'End Fast'}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.deleteFastMiniBtn, { backgroundColor: theme.danger + '18' }]}
+                      onPress={() => deleteFastingRecord(activeFast.id)}
+                    >
+                      <Trash2 size={13} color={theme.danger} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Clear Start & Target End Dates */}
@@ -434,9 +444,18 @@ export const MoreScreen: React.FC = () => {
                         <Text style={[styles.historyType, { color: theme.primary }]}>
                           {fast.fastType} Fast ({fast.targetHours}h)
                         </Text>
-                        <Text style={[styles.historyStatus, { color: fast.status === 'completed' ? theme.success : theme.textMuted }]}>
-                          {fast.status.toUpperCase()}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={[styles.historyStatus, { color: fast.status === 'completed' ? theme.success : theme.textMuted }]}>
+                            {fast.status.toUpperCase()}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => deleteFastingRecord(fast.id)}
+                            style={styles.deleteFastIconBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Trash2 size={13} color={theme.danger} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                       <Text style={[styles.historyIntention, { color: theme.text }]}>
                         {fast.prayerIntention}
@@ -1121,6 +1140,16 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     fontWeight: '700',
+  },
+  deleteFastMiniBtn: {
+    padding: 6,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteFastIconBtn: {
+    padding: 4,
+    borderRadius: borderRadius.sm,
   },
   fastingDatesCard: {
     marginTop: spacing.sm,

@@ -54,7 +54,7 @@ export const darkTheme: ColorPalette = {
   accentPurple: '#8B5CF6',    // Electric Royal Violet
   accentCyan: '#06B6D4',      // Living Water Cyan
   taskColor: '#38BDF8',       // Radiant Crystal Sky Blue for Tasks
-  titheColor: '#10B981',      // Vibrant Kingdom Green for Tithe
+  titheColor: '#8B5CF6',      // Consecrated Royal Violet for Tithe (Distinct from Income)
   offeringColor: '#F59E0B',   // Vibrant Amber
   expenseColor: '#FF3366',    // Vibrant Electric Coral / Rose
   incomeColor: '#00E676',     // Neon Emerald Green
@@ -93,7 +93,7 @@ export const lightTheme: ColorPalette = {
   accentPurple: '#7C3AED',
   accentCyan: '#0284C7',
   taskColor: '#0284C7',       // Crisp Sky Blue for Tasks
-  titheColor: '#059669',      // Deep Royal Emerald for Tithes
+  titheColor: '#7C3AED',      // Rich Royal Violet for Tithes (Distinct from Income)
   offeringColor: '#D97706',
   expenseColor: '#E11D48',    // Sophisticated Rose for Expenses
   incomeColor: '#16A34A',     // Harmonious Green for Income
