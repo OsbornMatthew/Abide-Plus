@@ -61,9 +61,6 @@ jobs:
       - name: 📦 Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: 🛠️ Generate Fresh Android Project (Expo Prebuild)
-        run: npx expo prebuild --platform android --clean --no-install
-
       - name: 🔑 Set Permissions on Gradle & Hermes Compiler
         run: |
           chmod +x android/gradlew
