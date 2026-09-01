@@ -14,7 +14,7 @@ import { MoreScreen } from '../screens/MoreScreen';
 
 // Icons
 import {
-  Sparkles,
+  Compass,
   BookOpen,
   Heart,
   Wallet,
@@ -55,10 +55,10 @@ export const RootNavigator: React.FC = () => {
           name="Home"
           component={HomeScreen}
           options={{
-            tabBarLabel: isTamil ? 'இன்று' : 'Sanctuary',
+            tabBarLabel: isTamil ? 'பயணம்' : 'Journey',
             tabBarIcon: ({ color, size, focused }) => (
               <View style={[styles.iconWrapper, focused && { backgroundColor: theme.primary + '20' }]}>
-                <Sparkles size={20} color={color} />
+                <Compass size={20} color={color} />
               </View>
             ),
           }}

@@ -229,16 +229,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
 
-        // Clear all previous best streaks and reset cleanly starting from today
+        // Clear all previous test history dates and reset cleanly starting from today (1 day)
+        const today = new Date().toISOString().split('T')[0];
         const sanitizedHabits = (loadedHabits || []).map((h: any) => {
-          const streak = calculateStreak(h.completedDates || []);
+          const isDoneToday = (h.completedDates || []).includes(today);
+          const cleanDates = isDoneToday ? [today] : [];
           return {
             ...h,
-            currentStreak: streak,
-            bestStreak: streak,
+            completedDates: cleanDates,
+            currentStreak: isDoneToday ? 1 : 0,
+            bestStreak: isDoneToday ? 1 : 0,
           };
         });
         setHabits(sanitizedHabits);
+        await StorageService.saveHabits(sanitizedHabits);
+        syncUserCloud({ habits: sanitizedHabits });
 
         // Filter out any old pre-loaded seed notes so user starts with a completely clean slate
         const cleanNotes = (loadedVerseNotes || []).filter(
@@ -424,8 +429,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         StorageService.saveReadingPlans(cloud.readingPlans);
       }
       if (cloud.habits && Array.isArray(cloud.habits)) {
-        setHabits(cloud.habits);
-        StorageService.saveHabits(cloud.habits);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const sanitizedHabits = cloud.habits.map((h: any) => {
+          const isDoneToday = (h.completedDates || []).includes(todayStr);
+          const cleanDates = isDoneToday ? [todayStr] : [];
+          return {
+            ...h,
+            completedDates: cleanDates,
+            currentStreak: isDoneToday ? 1 : 0,
+            bestStreak: isDoneToday ? 1 : 0,
+          };
+        });
+        setHabits(sanitizedHabits);
+        StorageService.saveHabits(sanitizedHabits);
       }
       if (cloud.settings && typeof cloud.settings === 'object') {
         setSettings((prev) => ({ ...prev, ...cloud.settings }));
