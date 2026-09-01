@@ -12,10 +12,8 @@ import { AddTransactionModal } from '../components/modals/AddTransactionModal';
 import { TransactionType } from '../types/finance';
 import {
   HandCoins,
-  TrendingUp,
-  TrendingDown,
   Heart,
-  PiggyBank,
+  Coins,
   Trash2,
   ShieldCheck,
   Calendar,
@@ -24,8 +22,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  ArrowDownLeft,
-  ArrowUpRight,
+  ArrowDown,
+  ArrowUp,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -299,7 +297,7 @@ export const FinanceScreen: React.FC = () => {
             {/* Income */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('income')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <ArrowDownLeft size={12} color={theme.incomeColor} />
+                <ArrowDown size={12} color={theme.incomeColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'வரவு' : 'Income'}
                 </Text>
@@ -314,7 +312,7 @@ export const FinanceScreen: React.FC = () => {
             {/* Expense */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('expense')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <ArrowUpRight size={12} color={theme.expenseColor} />
+                <ArrowUp size={12} color={theme.expenseColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'செலவு' : 'Expense'}
                 </Text>
@@ -341,10 +339,10 @@ export const FinanceScreen: React.FC = () => {
 
             <View style={[styles.vertDivider, { backgroundColor: theme.cardBorder }]} />
 
-            {/* Savings */}
+            {/* Savings (Coins Icon) */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('savings')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <PiggyBank size={11} color={theme.balanceColor} />
+                <Coins size={11} color={theme.balanceColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'சேமிப்பு' : 'Savings'}
                 </Text>
@@ -364,7 +362,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('income')}
             activeOpacity={0.8}
           >
-            <ArrowDownLeft size={16} color="#FFF" />
+            <ArrowDown size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'வரவு' : 'Income'}
             </Text>
@@ -376,7 +374,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('expense')}
             activeOpacity={0.8}
           >
-            <ArrowUpRight size={16} color="#FFF" />
+            <ArrowUp size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'செலவு' : 'Expense'}
             </Text>
@@ -394,13 +392,13 @@ export const FinanceScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Savings */}
+          {/* Savings (Coins) */}
           <TouchableOpacity
             style={[styles.directLogTile, { backgroundColor: theme.balanceColor }, theme.cardShadow]}
             onPress={() => openModal('savings')}
             activeOpacity={0.8}
           >
-            <PiggyBank size={15} color="#FFF" />
+            <Coins size={15} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'சேமிப்பு' : 'Savings'}
             </Text>
@@ -595,13 +593,13 @@ export const FinanceScreen: React.FC = () => {
                 >
                   <View style={[styles.txIconBox, { backgroundColor: tagColor + '20' }]}>
                     {isInc ? (
-                      <ArrowDownLeft size={16} color={theme.incomeColor} />
+                      <ArrowDown size={16} color={theme.incomeColor} />
                     ) : isSav ? (
-                      <PiggyBank size={16} color={theme.balanceColor} />
+                      <Coins size={16} color={theme.balanceColor} />
                     ) : isGiv ? (
                       <Heart size={16} color={theme.primary} />
                     ) : (
-                      <ArrowUpRight size={16} color={theme.expenseColor} />
+                      <ArrowUp size={16} color={theme.expenseColor} />
                     )}
                   </View>
 

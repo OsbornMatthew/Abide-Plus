@@ -16,10 +16,10 @@ import {
   X,
   Check,
   Heart,
-  ArrowDownLeft,
-  ArrowUpRight,
+  ArrowDown,
+  ArrowUp,
   Sparkles,
-  PiggyBank,
+  Coins,
   Calendar,
   PenLine,
 } from 'lucide-react-native';
@@ -189,7 +189,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 ]}
                 onPress={() => handleTypeChange('income')}
               >
-                <ArrowDownLeft size={14} color={type === 'income' ? '#000' : theme.textMuted} />
+                <ArrowDown size={14} color={type === 'income' ? '#000' : theme.textMuted} />
                 <Text
                   style={[
                     styles.typeTabText,
@@ -208,7 +208,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 ]}
                 onPress={() => handleTypeChange('expense')}
               >
-                <ArrowUpRight size={14} color={type === 'expense' ? '#FFF' : theme.textMuted} />
+                <ArrowUp size={14} color={type === 'expense' ? '#FFF' : theme.textMuted} />
                 <Text
                   style={[
                     styles.typeTabText,
@@ -260,7 +260,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 ]}
                 onPress={() => handleTypeChange('savings')}
               >
-                <PiggyBank size={13} color={type === 'savings' ? '#FFF' : theme.textMuted} />
+                <Coins size={13} color={type === 'savings' ? '#FFF' : theme.textMuted} />
                 <Text
                   style={[
                     styles.typeTabText,

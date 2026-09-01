@@ -229,13 +229,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
 
-        // Sanitize and recompute habit streaks cleanly from today
+        // Clear all previous best streaks and reset cleanly starting from today
         const sanitizedHabits = (loadedHabits || []).map((h: any) => {
           const streak = calculateStreak(h.completedDates || []);
           return {
             ...h,
             currentStreak: streak,
-            bestStreak: Math.max(h.bestStreak || 0, streak),
+            bestStreak: streak,
           };
         });
         setHabits(sanitizedHabits);

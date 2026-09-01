@@ -96,7 +96,7 @@ export const DEFAULT_HABITS: Habit[] = [
     category: 'Stewardship',
     frequency: 'weekly',
     targetDaysPerWeek: 1,
-    icon: 'PiggyBank',
+    icon: 'Coins',
     color: '#EAB308',
     completedDates: [],
     currentStreak: 0,

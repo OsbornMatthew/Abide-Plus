@@ -23,13 +23,13 @@ import {
   TrendingUp,
   TrendingDown,
   Heart,
-  PiggyBank,
+  Coins,
   Check,
   ChevronRight,
   Clock,
   Wallet,
-  ArrowUpRight,
-  ArrowDownLeft,
+  ArrowUp,
+  ArrowDown,
   Share2,
   History,
   Zap,
@@ -340,7 +340,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         {/* 4 CLEAN ACTION TILES (Income | Expense | Tithe | Savings) */}
         <View style={styles.quickActionsGrid}>
-          {/* Income (Incoming Cash Arrow) */}
+          {/* Income (Arrow Down / Inflow) */}
           <TouchableOpacity
             style={[
               styles.quickTile,
@@ -350,14 +350,14 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => openFinanceModal('income')}
           >
             <View style={[styles.quickIconCircle, { backgroundColor: theme.incomeColor + '20' }]}>
-              <ArrowDownLeft size={18} color={theme.incomeColor} />
+              <ArrowDown size={18} color={theme.incomeColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
               {isTamil ? 'வருமானம்' : 'Income'}
             </Text>
           </TouchableOpacity>
 
-          {/* Expense (Outgoing Cash Arrow) */}
+          {/* Expense (Arrow Up / Outflow) */}
           <TouchableOpacity
             style={[
               styles.quickTile,
@@ -367,7 +367,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => openFinanceModal('expense')}
           >
             <View style={[styles.quickIconCircle, { backgroundColor: theme.expenseColor + '20' }]}>
-              <ArrowUpRight size={18} color={theme.expenseColor} />
+              <ArrowUp size={18} color={theme.expenseColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
               {isTamil ? 'செலவு' : 'Expense'}
@@ -391,7 +391,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
 
-          {/* Savings */}
+          {/* Savings (Coins Icon) */}
           <TouchableOpacity
             style={[
               styles.quickTile,
@@ -401,7 +401,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => openFinanceModal('savings')}
           >
             <View style={[styles.quickIconCircle, { backgroundColor: theme.balanceColor + '20' }]}>
-              <PiggyBank size={17} color={theme.balanceColor} />
+              <Coins size={17} color={theme.balanceColor} />
             </View>
             <Text style={[styles.quickTileLabel, { color: theme.text }]}>
               {isTamil ? 'சேமிப்பு' : 'Savings'}

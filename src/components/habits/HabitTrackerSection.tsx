@@ -17,7 +17,7 @@ import {
   BookOpen,
   Heart,
   Sparkles,
-  PiggyBank,
+  Coins,
   HeartHandshake,
   Check,
   Plus,

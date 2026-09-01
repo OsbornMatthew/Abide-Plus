@@ -17,7 +17,7 @@ export const AbideLogo: React.FC<AbideLogoProps> = ({
   const { settings } = useApp();
   const isDark = settings.isDarkMode;
 
-  const plusSize = Math.round(fontSize * 1.95); // Significantly larger, bolder & more prominent
+  const plusSize = Math.round(fontSize * 1.3); // Elegantly balanced & bold
 
   return (
     <View style={styles.container}>
@@ -33,8 +33,8 @@ export const AbideLogo: React.FC<AbideLogoProps> = ({
         <Text style={[styles.abideText, { fontSize, color: isDark ? '#FFFFFF' : '#0F172A' }]}>
           Abide
         </Text>
-        {/* Ultra-Bold Vibrant Gradient '+' Symbol */}
-        <Svg width={plusSize * 1.1} height={plusSize * 1.3} style={styles.svgPlus}>
+        {/* Crisp Bold Vibrant Gradient '+' Symbol */}
+        <Svg width={plusSize * 0.95} height={plusSize * 1.15} style={styles.svgPlus}>
           <Defs>
             <SvgGradient id="rainbowPlusGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <Stop offset="0%" stopColor="#FBBF24" />
@@ -49,9 +49,9 @@ export const AbideLogo: React.FC<AbideLogoProps> = ({
             fontSize={plusSize}
             fontWeight="900"
             stroke="url(#rainbowPlusGrad)"
-            strokeWidth="1.6"
-            x="2"
-            y={fontSize * 1.25}
+            strokeWidth="0.7"
+            x="1"
+            y={fontSize * 1.02}
             textAnchor="start"
           >
             +
