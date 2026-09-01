@@ -23,13 +23,14 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=4096"
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
+      ANDROID_HOME: "/usr/local/lib/android/sdk"
 
     steps:
-      - name: 🚀 Configure 10GB Swap Space (Prevent Compiler OOM)
+      - name: 🚀 Configure Swap Space
         run: |
           sudo swapoff -a || true
           sudo rm -f /swapfile || true
-          sudo fallocate -l 10G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=10240
+          sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -42,28 +43,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: ☕ Setup Java JDK 17 with Gradle Cache
+      - name: ☕ Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
-
-      - name: 📱 Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: 📜 Accept Android SDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
-          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a918e30573bab4c9c91346d8abd\n79124426920f4f141a5e5b1e3709c4ab840be6b0\n8564b017a0fdac303a342ab0b1ff118e8d3d86a1\n" > "$ANDROID_HOME/licenses/android-sdk-license"
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: 📦 Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: 🔑 Set Permissions on Gradle & Hermes
+      - name: 🔑 Set Permissions
         run: |
           chmod +x android/gradlew
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
@@ -71,7 +66,7 @@ jobs:
       - name: 🚀 Compile Standalone Android APK
         run: |
           cd android
-          ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon --max-workers=2 -x lint --stacktrace || ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon --max-workers=2 -x lint --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace || ./gradlew assembleDebug --no-daemon --stacktrace
           cd ..
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | head -n 1)
           if [ -z "$APK_FILE" ]; then
