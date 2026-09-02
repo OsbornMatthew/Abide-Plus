@@ -344,9 +344,16 @@ export const HabitTrackerSection: React.FC = () => {
                           {
                             backgroundColor: isDoneOnDate ? habit.color || theme.success : theme.cardAlt,
                             borderColor: isDoneOnDate ? habit.color || theme.success : theme.cardBorder,
+                            opacity: d.isToday ? 1 : 0.85,
+                          },
+                          d.isToday && {
+                            borderWidth: 2,
+                            borderColor: habit.color || theme.primary,
                           },
                         ]}
-                        onPress={() => toggleHabit(habit.id, d.dateStr)}
+                        disabled={!d.isToday}
+                        onPress={() => d.isToday && toggleHabit(habit.id)}
+                        activeOpacity={d.isToday ? 0.7 : 1}
                       >
                         <Text style={[styles.miniDotDay, { color: isDoneOnDate ? '#FFF' : theme.textMuted }]}>
                           {d.dayName}

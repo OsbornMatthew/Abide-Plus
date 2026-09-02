@@ -225,11 +225,15 @@ export const HabitHistoryModal: React.FC<HabitHistoryModalProps> = ({ habit, vis
                       },
                       cell.isToday && !cell.isCompleted && {
                         borderColor: theme.primary,
-                        borderWidth: 1.5,
+                        borderWidth: 2,
+                      },
+                      !cell.isToday && {
+                        opacity: cell.isCompleted ? 0.9 : 0.65,
                       },
                     ]}
-                    onPress={() => toggleHabit(liveHabit.id, cell.dateStr)}
-                    activeOpacity={0.7}
+                    disabled={!cell.isToday}
+                    onPress={() => cell.isToday && toggleHabit(liveHabit.id)}
+                    activeOpacity={cell.isToday ? 0.7 : 1}
                   >
                     <Text
                       style={[

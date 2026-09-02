@@ -1115,7 +1115,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const toggleHabit = async (id: string, dateStr?: string) => {
-    const targetDate = dateStr || getLocalDateString();
+    const todayStr = getLocalDateString();
+    // Enforce discipline integrity: Only allow marking/unmarking today's habit
+    const targetDate = dateStr && dateStr !== todayStr ? todayStr : (dateStr || todayStr);
     const updated = habits.map((h) => {
       if (h.id === id) {
         const datesSet = new Set(h.completedDates || []);

@@ -367,6 +367,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               color={theme.titheColor}
               bgColor={theme.ringBg}
               showPercent={false}
+              centerText="10%"
             />
             <Text style={[styles.ringTitle, { color: theme.text }]}>
               {isTamil ? 'தசமபாகம்' : 'Tithe'}
