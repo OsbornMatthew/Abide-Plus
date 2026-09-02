@@ -28,7 +28,7 @@ const Tab = createBottomTabNavigator();
 export const RootNavigator: React.FC = () => {
   const { theme, settings, habitStats, bibleProgress, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
-  const navigationRef = useNavigationContainerRef();
+  const navigationRef = useNavigationContainerRef<any>();
   const currentRouteNameRef = useRef<string>('Home');
 
   useEffect(() => {
