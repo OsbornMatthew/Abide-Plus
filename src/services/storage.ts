@@ -112,7 +112,13 @@ export const StorageService = {
   async getBibleBooks(userId?: string): Promise<BibleBook[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.BIBLE_BOOKS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.BIBLE_BOOKS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       const clean = getCleanBibleBooks();
       if (userId) {
@@ -132,7 +138,13 @@ export const StorageService = {
   async getReadingPlans(userId?: string): Promise<ReadingPlan[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.READING_PLANS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.READING_PLANS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       const clean = getCleanReadingPlans();
       if (userId) {
@@ -152,7 +164,13 @@ export const StorageService = {
   async getVerseNotes(userId?: string): Promise<VerseNote[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.VERSE_NOTES, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.VERSE_NOTES);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       return data ? JSON.parse(data) : [];
     } catch {
       return [];
@@ -167,7 +185,13 @@ export const StorageService = {
   async getPrayers(userId?: string): Promise<PrayerItem[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.PRAYERS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.PRAYERS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       return SEED_PRAYERS;
     } catch {
@@ -183,7 +207,13 @@ export const StorageService = {
   async getTransactions(userId?: string): Promise<Transaction[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.TRANSACTIONS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       return SEED_TRANSACTIONS;
     } catch {
@@ -199,7 +229,13 @@ export const StorageService = {
   async getTodos(userId?: string): Promise<TodoTask[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.TODOS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.TODOS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       return SEED_TODOS;
     } catch {
@@ -215,7 +251,13 @@ export const StorageService = {
   async getSermons(userId?: string): Promise<SermonNote[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.SERMONS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.SERMONS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       return SEED_SERMONS;
     } catch {
@@ -231,7 +273,13 @@ export const StorageService = {
   async getMemoryVerses(userId?: string): Promise<ScriptureMemoryCard[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.MEMORY_VERSES, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.MEMORY_VERSES);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) return JSON.parse(data);
       return SEED_MEMORY_VERSES;
     } catch {
@@ -247,7 +295,13 @@ export const StorageService = {
   async getFastingRecords(userId?: string): Promise<FastingRecord[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.FASTING, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.FASTING);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       return data ? JSON.parse(data) : [];
     } catch {
       return [];
@@ -263,7 +317,13 @@ export const StorageService = {
   async getHabits(userId?: string): Promise<Habit[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.HABITS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.HABITS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -283,7 +343,13 @@ export const StorageService = {
   async getDecisionWheels(userId?: string): Promise<DecisionWheel[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.DECISION_WHEELS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_WHEELS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -303,7 +369,13 @@ export const StorageService = {
   async getDecisionResults(userId?: string): Promise<DecisionResult[]> {
     try {
       const key = getUserKey(STORAGE_KEYS.DECISION_RESULTS, userId);
-      const data = await AsyncStorage.getItem(key);
+      let data = await AsyncStorage.getItem(key);
+      if (!data && userId) {
+        data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_RESULTS);
+        if (data) {
+          await AsyncStorage.setItem(key, data);
+        }
+      }
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
