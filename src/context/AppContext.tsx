@@ -27,7 +27,7 @@ import { AuthService } from '../services/authStorage';
 import { FirebaseSyncService, UserCloudData } from '../services/firebase';
 import { darkTheme, lightTheme, ColorPalette } from '../theme/colors';
 import { DAILY_VERSES } from '../data/dailyVerses';
-import { getLocalDateString, getYesterdayLocalDateString, calculateHabitStreak } from '../utils/dateUtils';
+import { getLocalDateString, getYesterdayLocalDateString, calculateHabitStreak, calculateBestHabitStreak } from '../utils/dateUtils';
 
 interface AppContextType {
   // Auth & User
@@ -278,7 +278,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           .map((h: Habit) => {
             const allDates = Array.from(new Set(h.completedDates || [])).sort();
             const streak = calculateHabitStreak(allDates);
-            const best = Math.max(h.bestStreak || 0, streak);
+            const best = calculateBestHabitStreak(allDates);
             return {
               ...h,
               completedDates: allDates,
@@ -502,7 +502,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const sanitizedHabits = cloud.habits.map((h: any) => {
           const allDates = Array.from(new Set(h.completedDates || [])).sort();
           const streak = calculateHabitStreak(allDates);
-          const best = Math.max(h.bestStreak || 0, streak);
+          const best = calculateBestHabitStreak(allDates);
           return {
             ...h,
             completedDates: allDates,
@@ -1128,7 +1128,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         const newDates = Array.from(datesSet).sort();
         const streak = calculateHabitStreak(newDates);
-        const best = Math.max(h.bestStreak || 0, streak);
+        const best = calculateBestHabitStreak(newDates);
         return {
           ...h,
           completedDates: newDates,
@@ -1163,7 +1163,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (h.id === id) {
         const merged = { ...h, ...updates };
         const streak = calculateHabitStreak(merged.completedDates || []);
-        return { ...merged, currentStreak: streak, bestStreak: Math.max(merged.bestStreak || 0, streak) };
+        const best = calculateBestHabitStreak(merged.completedDates || []);
+        return { ...merged, currentStreak: streak, bestStreak: best };
       }
       return h;
     });

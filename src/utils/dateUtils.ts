@@ -91,3 +91,43 @@ export const calculateHabitStreak = (completedDates: string[] = []): number => {
 
   return streak;
 };
+
+/**
+ * Calculates the true all-time best streak (longest consecutive run of completed dates).
+ */
+export const calculateBestHabitStreak = (completedDates: string[] = []): number => {
+  if (!completedDates || completedDates.length === 0) return 0;
+
+  const sortedUnique = Array.from(new Set(completedDates)).sort();
+  if (sortedUnique.length === 0) return 0;
+
+  let maxStreak = 1;
+  let currentRun = 1;
+
+  for (let i = 1; i < sortedUnique.length; i++) {
+    const prevParts = sortedUnique[i - 1].split('-').map(Number);
+    const currParts = sortedUnique[i].split('-').map(Number);
+
+    const prevDate = new Date(prevParts[0], prevParts[1] - 1, prevParts[2]);
+    const currDate = new Date(currParts[0], currParts[1] - 1, currParts[2]);
+
+    // Check if currDate is exactly 1 day after prevDate
+    const expectedNext = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate() + 1);
+
+    if (
+      expectedNext.getFullYear() === currDate.getFullYear() &&
+      expectedNext.getMonth() === currDate.getMonth() &&
+      expectedNext.getDate() === currDate.getDate()
+    ) {
+      currentRun++;
+    } else {
+      currentRun = 1;
+    }
+
+    if (currentRun > maxStreak) {
+      maxStreak = currentRun;
+    }
+  }
+
+  return maxStreak;
+};
