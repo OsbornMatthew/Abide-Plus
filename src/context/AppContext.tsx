@@ -226,9 +226,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     async function loadData() {
       try {
+        const activeUser = await AuthService.getActiveUser();
+        const usersList = await AuthService.getSavedUsers();
+        const uid = activeUser?.id;
+
         const [
-          activeUser,
-          usersList,
           loadedSettings,
           loadedBooks,
           loadedPlans,
@@ -243,28 +245,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           loadedWheels,
           loadedResults,
         ] = await Promise.all([
-          AuthService.getActiveUser(),
-          AuthService.getSavedUsers(),
           StorageService.getSettings(),
-          StorageService.getBibleBooks(),
-          StorageService.getReadingPlans(),
-          StorageService.getVerseNotes(),
-          StorageService.getPrayers(),
-          StorageService.getTransactions(),
-          StorageService.getTodos(),
-          StorageService.getSermons(),
-          StorageService.getMemoryVerses(),
-          StorageService.getFastingRecords(),
-          StorageService.getHabits(),
-          StorageService.getDecisionWheels(),
-          StorageService.getDecisionResults(),
+          StorageService.getBibleBooks(uid),
+          StorageService.getReadingPlans(uid),
+          StorageService.getVerseNotes(uid),
+          StorageService.getPrayers(uid),
+          StorageService.getTransactions(uid),
+          StorageService.getTodos(uid),
+          StorageService.getSermons(uid),
+          StorageService.getMemoryVerses(uid),
+          StorageService.getFastingRecords(uid),
+          StorageService.getHabits(uid),
+          StorageService.getDecisionWheels(uid),
+          StorageService.getDecisionResults(uid),
         ]);
 
         setUser(activeUser);
         setSavedUsers(usersList);
         setSettings(loadedSettings);
-        setBibleBooks(loadedBooks || getCleanBibleBooks());
-        setReadingPlans(loadedPlans || getCleanReadingPlans());
+        setBibleBooks(uid && loadedBooks && loadedBooks.length > 0 ? loadedBooks : getCleanBibleBooks());
+        setReadingPlans(uid && loadedPlans && loadedPlans.length > 0 ? loadedPlans : getCleanReadingPlans());
 
         // Clean out default seed habits so users start with their own, and compute accurate streaks
         const defaultHabitIds = new Set([
@@ -436,21 +436,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Helper to load or reset user-specific data to guarantee 100% data isolation
     const applyUserData = async (cloud: UserCloudData | null, targetUser?: UserProfile | null) => {
+      const targetUid = targetUser?.id || user?.id;
       if (cloud) {
         if (cloud.prayers && Array.isArray(cloud.prayers)) {
           setPrayers(cloud.prayers);
-          await StorageService.savePrayers(cloud.prayers);
+          await StorageService.savePrayers(cloud.prayers, targetUid);
         } else {
           setPrayers([]);
-          await StorageService.savePrayers([]);
+          await StorageService.savePrayers([], targetUid);
         }
 
         if (cloud.transactions && Array.isArray(cloud.transactions)) {
           setTransactions(cloud.transactions);
-          await StorageService.saveTransactions(cloud.transactions);
+          await StorageService.saveTransactions(cloud.transactions, targetUid);
         } else {
           setTransactions([]);
-          await StorageService.saveTransactions([]);
+          await StorageService.saveTransactions([], targetUid);
         }
 
         if (cloud.todos && Array.isArray(cloud.todos)) {
@@ -470,60 +471,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             return t;
           });
           setTodos(refreshedTodos);
-          await StorageService.saveTodos(refreshedTodos);
+          await StorageService.saveTodos(refreshedTodos, targetUid);
         } else {
           setTodos(SEED_TODOS);
-          await StorageService.saveTodos(SEED_TODOS);
+          await StorageService.saveTodos(SEED_TODOS, targetUid);
         }
 
         if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
           setVerseNotes(cloud.verseNotes);
-          await StorageService.saveVerseNotes(cloud.verseNotes);
+          await StorageService.saveVerseNotes(cloud.verseNotes, targetUid);
         } else {
           setVerseNotes([]);
-          await StorageService.saveVerseNotes([]);
+          await StorageService.saveVerseNotes([], targetUid);
         }
 
         if (cloud.sermons && Array.isArray(cloud.sermons)) {
           setSermons(cloud.sermons);
-          await StorageService.saveSermons(cloud.sermons);
+          await StorageService.saveSermons(cloud.sermons, targetUid);
         } else {
           setSermons([]);
-          await StorageService.saveSermons([]);
+          await StorageService.saveSermons([], targetUid);
         }
 
         if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
           setMemoryVerses(cloud.memoryVerses);
-          await StorageService.saveMemoryVerses(cloud.memoryVerses);
+          await StorageService.saveMemoryVerses(cloud.memoryVerses, targetUid);
         } else {
           setMemoryVerses([]);
-          await StorageService.saveMemoryVerses([]);
+          await StorageService.saveMemoryVerses([], targetUid);
         }
 
         if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
           setFastingRecords(cloud.fastingRecords);
-          await StorageService.saveFastingRecords(cloud.fastingRecords);
+          await StorageService.saveFastingRecords(cloud.fastingRecords, targetUid);
         } else {
           setFastingRecords([]);
-          await StorageService.saveFastingRecords([]);
+          await StorageService.saveFastingRecords([], targetUid);
         }
 
-        if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
+        if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks) && cloud.bibleBooks.length > 0) {
           setBibleBooks(cloud.bibleBooks);
-          await StorageService.saveBibleBooks(cloud.bibleBooks);
+          await StorageService.saveBibleBooks(cloud.bibleBooks, targetUid);
         } else {
           const cleanBooks = getCleanBibleBooks();
           setBibleBooks(cleanBooks);
-          await StorageService.saveBibleBooks(cleanBooks);
+          await StorageService.saveBibleBooks(cleanBooks, targetUid);
         }
 
-        if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
+        if (cloud.readingPlans && Array.isArray(cloud.readingPlans) && cloud.readingPlans.length > 0) {
           setReadingPlans(cloud.readingPlans);
-          await StorageService.saveReadingPlans(cloud.readingPlans);
+          await StorageService.saveReadingPlans(cloud.readingPlans, targetUid);
         } else {
           const cleanPlans = getCleanReadingPlans();
           setReadingPlans(cleanPlans);
-          await StorageService.saveReadingPlans(cleanPlans);
+          await StorageService.saveReadingPlans(cleanPlans, targetUid);
         }
 
         if (cloud.habits && Array.isArray(cloud.habits)) {
@@ -539,15 +540,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             };
           });
           setHabits(sanitizedHabits);
-          await StorageService.saveHabits(sanitizedHabits);
+          await StorageService.saveHabits(sanitizedHabits, targetUid);
         } else {
           setHabits([]);
-          await StorageService.saveHabits([]);
+          await StorageService.saveHabits([], targetUid);
         }
 
         if (cloud.decisionWheels && Array.isArray(cloud.decisionWheels)) {
           setDecisionWheels(cloud.decisionWheels);
-          await StorageService.saveDecisionWheels(cloud.decisionWheels);
+          await StorageService.saveDecisionWheels(cloud.decisionWheels, targetUid);
           if (cloud.decisionWheels.length > 0) {
             setActiveWheelId(cloud.decisionWheels[0].id);
           } else {
@@ -555,16 +556,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         } else {
           setDecisionWheels([]);
-          await StorageService.saveDecisionWheels([]);
+          await StorageService.saveDecisionWheels([], targetUid);
           setActiveWheelId('');
         }
 
         if (cloud.decisionResults && Array.isArray(cloud.decisionResults)) {
           setDecisionResults(cloud.decisionResults);
-          await StorageService.saveDecisionResults(cloud.decisionResults);
+          await StorageService.saveDecisionResults(cloud.decisionResults, targetUid);
         } else {
           setDecisionResults([]);
-          await StorageService.saveDecisionResults([]);
+          await StorageService.saveDecisionResults([], targetUid);
         }
 
         if (cloud.settings && typeof cloud.settings === 'object') {
@@ -590,21 +591,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setReadingPlans(cleanPlans);
         setActiveWheelId('');
 
-        await StorageService.savePrayers([]);
-        await StorageService.saveTransactions([]);
-        await StorageService.saveHabits([]);
-        await StorageService.saveDecisionWheels([]);
-        await StorageService.saveDecisionResults([]);
-        await StorageService.saveVerseNotes([]);
-        await StorageService.saveSermons([]);
-        await StorageService.saveMemoryVerses([]);
-        await StorageService.saveFastingRecords([]);
-        await StorageService.saveTodos(SEED_TODOS);
-        await StorageService.saveBibleBooks(cleanBooks);
-        await StorageService.saveReadingPlans(cleanPlans);
+        await StorageService.savePrayers([], targetUid);
+        await StorageService.saveTransactions([], targetUid);
+        await StorageService.saveHabits([], targetUid);
+        await StorageService.saveDecisionWheels([], targetUid);
+        await StorageService.saveDecisionResults([], targetUid);
+        await StorageService.saveVerseNotes([], targetUid);
+        await StorageService.saveSermons([], targetUid);
+        await StorageService.saveMemoryVerses([], targetUid);
+        await StorageService.saveFastingRecords([], targetUid);
+        await StorageService.saveTodos(SEED_TODOS, targetUid);
+        await StorageService.saveBibleBooks(cleanBooks, targetUid);
+        await StorageService.saveReadingPlans(cleanPlans, targetUid);
 
-        if (targetUser?.id) {
-          await FirebaseSyncService.syncUserData(targetUser.id, {
+        if (targetUid) {
+          await FirebaseSyncService.syncUserData(targetUid, {
             prayers: [],
             transactions: [],
             habits: [],
@@ -630,13 +631,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Subscribe to realtime changes across devices
     const unsubscribe = FirebaseSyncService.subscribeToUserData(user.id, (cloud) => {
       if (!cloud) return;
+      const currentUid = user.id;
       if (cloud.prayers && Array.isArray(cloud.prayers)) {
         setPrayers(cloud.prayers);
-        StorageService.savePrayers(cloud.prayers);
+        StorageService.savePrayers(cloud.prayers, currentUid);
       }
       if (cloud.transactions && Array.isArray(cloud.transactions)) {
         setTransactions(cloud.transactions);
-        StorageService.saveTransactions(cloud.transactions);
+        StorageService.saveTransactions(cloud.transactions, currentUid);
       }
       if (cloud.todos && Array.isArray(cloud.todos)) {
         const todayStr = getLocalDateString();
@@ -655,31 +657,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return t;
         });
         setTodos(refreshedTodos);
-        StorageService.saveTodos(refreshedTodos);
+        StorageService.saveTodos(refreshedTodos, currentUid);
       }
       if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
         setVerseNotes(cloud.verseNotes);
-        StorageService.saveVerseNotes(cloud.verseNotes);
+        StorageService.saveVerseNotes(cloud.verseNotes, currentUid);
       }
       if (cloud.sermons && Array.isArray(cloud.sermons)) {
         setSermons(cloud.sermons);
-        StorageService.saveSermons(cloud.sermons);
+        StorageService.saveSermons(cloud.sermons, currentUid);
       }
       if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
         setMemoryVerses(cloud.memoryVerses);
-        StorageService.saveMemoryVerses(cloud.memoryVerses);
+        StorageService.saveMemoryVerses(cloud.memoryVerses, currentUid);
       }
       if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
         setFastingRecords(cloud.fastingRecords);
-        StorageService.saveFastingRecords(cloud.fastingRecords);
+        StorageService.saveFastingRecords(cloud.fastingRecords, currentUid);
       }
-      if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
+      if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks) && cloud.bibleBooks.length > 0) {
         setBibleBooks(cloud.bibleBooks);
-        StorageService.saveBibleBooks(cloud.bibleBooks);
+        StorageService.saveBibleBooks(cloud.bibleBooks, currentUid);
       }
-      if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
+      if (cloud.readingPlans && Array.isArray(cloud.readingPlans) && cloud.readingPlans.length > 0) {
         setReadingPlans(cloud.readingPlans);
-        StorageService.saveReadingPlans(cloud.readingPlans);
+        StorageService.saveReadingPlans(cloud.readingPlans, currentUid);
       }
       if (cloud.habits && Array.isArray(cloud.habits)) {
         const sanitizedHabits = cloud.habits.map((h: any) => {
@@ -694,20 +696,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           };
         });
         setHabits(sanitizedHabits);
-        StorageService.saveHabits(sanitizedHabits);
+        StorageService.saveHabits(sanitizedHabits, currentUid);
       }
       if (cloud.decisionWheels && Array.isArray(cloud.decisionWheels)) {
         setDecisionWheels(cloud.decisionWheels);
-        StorageService.saveDecisionWheels(cloud.decisionWheels);
-        if (cloud.decisionWheels.length > 0) {
-          setActiveWheelId(cloud.decisionWheels[0].id);
-        } else {
-          setActiveWheelId('');
-        }
+        StorageService.saveDecisionWheels(cloud.decisionWheels, currentUid);
       }
       if (cloud.decisionResults && Array.isArray(cloud.decisionResults)) {
         setDecisionResults(cloud.decisionResults);
-        StorageService.saveDecisionResults(cloud.decisionResults);
+        StorageService.saveDecisionResults(cloud.decisionResults, currentUid);
       }
       if (cloud.userProfile && typeof cloud.userProfile === 'object') {
         setUser((prev) => {
@@ -843,6 +840,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await AuthService.setActiveUser(targetUser);
     setUser(targetUser);
     await updateSettings({ userName: targetUser.displayName });
+    const cloud = await FirebaseSyncService.loadUserData(targetUser.id);
+    if (cloud) {
+      applyUserData(cloud, targetUser);
+    } else {
+      const cleanBooks = await StorageService.getBibleBooks(targetUser.id);
+      const cleanPlans = await StorageService.getReadingPlans(targetUser.id);
+      const loadedHabits = await StorageService.getHabits(targetUser.id);
+      const loadedPrayers = await StorageService.getPrayers(targetUser.id);
+      const loadedTxs = await StorageService.getTransactions(targetUser.id);
+      const loadedTodos = await StorageService.getTodos(targetUser.id);
+      const loadedWheels = await StorageService.getDecisionWheels(targetUser.id);
+      const loadedResults = await StorageService.getDecisionResults(targetUser.id);
+      const loadedNotes = await StorageService.getVerseNotes(targetUser.id);
+      const loadedSermons = await StorageService.getSermons(targetUser.id);
+      const loadedMems = await StorageService.getMemoryVerses(targetUser.id);
+      const loadedFasts = await StorageService.getFastingRecords(targetUser.id);
+
+      setBibleBooks(cleanBooks || getCleanBibleBooks());
+      setReadingPlans(cleanPlans || getCleanReadingPlans());
+      setHabits(loadedHabits || []);
+      setPrayers(loadedPrayers || []);
+      setTransactions(loadedTxs || []);
+      setTodos(loadedTodos || SEED_TODOS);
+      setDecisionWheels(loadedWheels || []);
+      setDecisionResults(loadedResults || []);
+      setVerseNotes(loadedNotes || []);
+      setSermons(loadedSermons || []);
+      setMemoryVerses(loadedMems || []);
+      setFastingRecords(loadedFasts || []);
+    }
   };
 
   const deleteAccount = async () => {
@@ -951,7 +978,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return book;
     });
     setBibleBooks(updated);
-    await StorageService.saveBibleBooks(updated);
+    await StorageService.saveBibleBooks(updated, user?.id);
     syncUserCloud({ bibleBooks: updated });
   };
 
@@ -966,7 +993,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return book;
     });
     setBibleBooks(updated);
-    await StorageService.saveBibleBooks(updated);
+    await StorageService.saveBibleBooks(updated, user?.id);
     syncUserCloud({ bibleBooks: updated });
   };
 
@@ -985,7 +1012,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return plan;
     });
     setReadingPlans(updated);
-    await StorageService.saveReadingPlans(updated);
+    await StorageService.saveReadingPlans(updated, user?.id);
     syncUserCloud({ readingPlans: updated });
   };
 
@@ -1000,7 +1027,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newNote, ...verseNotes];
     setVerseNotes(updated);
-    await StorageService.saveVerseNotes(updated);
+    await StorageService.saveVerseNotes(updated, user?.id);
     syncUserCloud({ verseNotes: updated });
   };
 
@@ -1015,14 +1042,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         : n
     );
     setVerseNotes(updated);
-    await StorageService.saveVerseNotes(updated);
+    await StorageService.saveVerseNotes(updated, user?.id);
     syncUserCloud({ verseNotes: updated });
   };
 
   const deleteVerseNote = async (id: string) => {
     const updated = verseNotes.filter((n) => n.id !== id);
     setVerseNotes(updated);
-    await StorageService.saveVerseNotes(updated);
+    await StorageService.saveVerseNotes(updated, user?.id);
     syncUserCloud({ verseNotes: updated });
   };
 
@@ -1037,7 +1064,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newPrayer, ...prayers];
     setPrayers(updated);
-    await StorageService.savePrayers(updated);
+    await StorageService.savePrayers(updated, user?.id);
     syncUserCloud({ prayers: updated });
   };
 
@@ -1046,7 +1073,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
     );
     setPrayers(updated);
-    await StorageService.savePrayers(updated);
+    await StorageService.savePrayers(updated, user?.id);
     syncUserCloud({ prayers: updated });
   };
 
@@ -1061,7 +1088,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deletePrayer = async (id: string) => {
     const updated = prayers.filter((p) => p.id !== id);
     setPrayers(updated);
-    await StorageService.savePrayers(updated);
+    await StorageService.savePrayers(updated, user?.id);
     syncUserCloud({ prayers: updated });
   };
 
@@ -1073,7 +1100,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newTx, ...transactions];
     setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+    await StorageService.saveTransactions(updated, user?.id);
     syncUserCloud({ transactions: updated });
   };
 
@@ -1082,14 +1109,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       t.id === id ? { ...t, ...updates } : t
     );
     setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+    await StorageService.saveTransactions(updated, user?.id);
     syncUserCloud({ transactions: updated });
   };
 
   const deleteTransaction = async (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
     setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+    await StorageService.saveTransactions(updated, user?.id);
     syncUserCloud({ transactions: updated });
   };
 
@@ -1149,7 +1176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newTodo, ...todos];
     setTodos(updated);
-    await StorageService.saveTodos(updated);
+    await StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
@@ -1158,7 +1185,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       t.id === id ? { ...t, ...updates } : t
     );
     setTodos(updated);
-    await StorageService.saveTodos(updated);
+    await StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
@@ -1175,14 +1202,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return t;
     });
     setTodos(updated);
-    await StorageService.saveTodos(updated);
+    await StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
   const deleteTodo = async (id: string) => {
     const updated = todos.filter((t) => t.id !== id);
     setTodos(updated);
-    await StorageService.saveTodos(updated);
+    await StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
@@ -1203,7 +1230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return t;
     });
     setTodos(updated);
-    await StorageService.saveTodos(updated);
+    await StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
@@ -1226,21 +1253,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const newSermon: SermonNote = { ...sermon, id: 'sermon-' + Date.now() };
     const updated = [newSermon, ...sermons];
     setSermons(updated);
-    await StorageService.saveSermons(updated);
+    await StorageService.saveSermons(updated, user?.id);
     syncUserCloud({ sermons: updated });
   };
 
   const updateSermon = async (id: string, updates: Partial<SermonNote>) => {
     const updated = sermons.map((s) => (s.id === id ? { ...s, ...updates } : s));
     setSermons(updated);
-    await StorageService.saveSermons(updated);
+    await StorageService.saveSermons(updated, user?.id);
     syncUserCloud({ sermons: updated });
   };
 
   const deleteSermon = async (id: string) => {
     const updated = sermons.filter((s) => s.id !== id);
     setSermons(updated);
-    await StorageService.saveSermons(updated);
+    await StorageService.saveSermons(updated, user?.id);
     syncUserCloud({ sermons: updated });
   };
 
@@ -1252,14 +1279,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newCard, ...memoryVerses];
     setMemoryVerses(updated);
-    await StorageService.saveMemoryVerses(updated);
+    await StorageService.saveMemoryVerses(updated, user?.id);
     syncUserCloud({ memoryVerses: updated });
   };
 
   const updateMemoryVerse = async (id: string, updates: Partial<ScriptureMemoryCard>) => {
     const updated = memoryVerses.map((m) => (m.id === id ? { ...m, ...updates } : m));
     setMemoryVerses(updated);
-    await StorageService.saveMemoryVerses(updated);
+    await StorageService.saveMemoryVerses(updated, user?.id);
     syncUserCloud({ memoryVerses: updated });
   };
 
@@ -1278,14 +1305,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return m;
     });
     setMemoryVerses(updated);
-    await StorageService.saveMemoryVerses(updated);
+    await StorageService.saveMemoryVerses(updated, user?.id);
     syncUserCloud({ memoryVerses: updated });
   };
 
   const deleteMemoryVerse = async (id: string) => {
     const updated = memoryVerses.filter((m) => m.id !== id);
     setMemoryVerses(updated);
-    await StorageService.saveMemoryVerses(updated);
+    await StorageService.saveMemoryVerses(updated, user?.id);
     syncUserCloud({ memoryVerses: updated });
   };
 
@@ -1305,7 +1332,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newFast, ...fastingRecords];
     setFastingRecords(updated);
-    await StorageService.saveFastingRecords(updated);
+    await StorageService.saveFastingRecords(updated, user?.id);
     syncUserCloud({ fastingRecords: updated });
   };
 
@@ -1317,14 +1344,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         : f
     );
     setFastingRecords(updated);
-    await StorageService.saveFastingRecords(updated);
+    await StorageService.saveFastingRecords(updated, user?.id);
     syncUserCloud({ fastingRecords: updated });
   };
 
   const deleteFastingRecord = async (id: string) => {
     const updated = fastingRecords.filter((f) => f.id !== id);
     setFastingRecords(updated);
-    await StorageService.saveFastingRecords(updated);
+    await StorageService.saveFastingRecords(updated, user?.id);
     syncUserCloud({ fastingRecords: updated });
   };
 
@@ -1353,7 +1380,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return h;
     });
     setHabits(updated);
-    await StorageService.saveHabits(updated);
+    await StorageService.saveHabits(updated, user?.id);
     syncUserCloud({ habits: updated });
   };
 
@@ -1368,7 +1395,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newHabit, ...habits];
     setHabits(updated);
-    await StorageService.saveHabits(updated);
+    await StorageService.saveHabits(updated, user?.id);
     syncUserCloud({ habits: updated });
   };
 
@@ -1383,14 +1410,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return h;
     });
     setHabits(updated);
-    await StorageService.saveHabits(updated);
+    await StorageService.saveHabits(updated, user?.id);
     syncUserCloud({ habits: updated });
   };
 
   const deleteHabit = async (id: string) => {
     const updated = habits.filter((h) => h.id !== id);
     setHabits(updated);
-    await StorageService.saveHabits(updated);
+    await StorageService.saveHabits(updated, user?.id);
     syncUserCloud({ habits: updated });
   };
 
@@ -1418,14 +1445,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = [newWheel, ...decisionWheels];
     setDecisionWheels(updated);
     setActiveWheelId(newWheel.id);
-    await StorageService.saveDecisionWheels(updated);
+    await StorageService.saveDecisionWheels(updated, user?.id);
     syncUserCloud({ decisionWheels: updated } as any);
   };
 
   const updateDecisionWheel = async (id: string, updates: Partial<DecisionWheel>) => {
     const updated = decisionWheels.map((w) => (w.id === id ? { ...w, ...updates } : w));
     setDecisionWheels(updated);
-    await StorageService.saveDecisionWheels(updated);
+    await StorageService.saveDecisionWheels(updated, user?.id);
     syncUserCloud({ decisionWheels: updated } as any);
   };
 
@@ -1435,7 +1462,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeWheelId === id) {
       setActiveWheelId(updated[0]?.id || '');
     }
-    await StorageService.saveDecisionWheels(updated);
+    await StorageService.saveDecisionWheels(updated, user?.id);
     syncUserCloud({ decisionWheels: updated } as any);
   };
 
@@ -1447,24 +1474,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     const updated = [newResult, ...decisionResults];
     setDecisionResults(updated);
-    await StorageService.saveDecisionResults(updated);
+    await StorageService.saveDecisionResults(updated, user?.id);
     syncUserCloud({ decisionResults: updated } as any);
   };
 
   const clearDecisionHistory = async () => {
     setDecisionResults([]);
-    await StorageService.saveDecisionResults([]);
+    await StorageService.saveDecisionResults([], user?.id);
     syncUserCloud({ decisionResults: [] } as any);
   };
 
   // Backup & Restore
   const exportBackupData = async () => {
-    return await StorageService.exportFullBackup();
+    return await StorageService.exportFullBackup(user?.id);
   };
 
   const importBackupData = async (jsonStr: string) => {
-    const success = await StorageService.restoreBackup(jsonStr);
+    const success = await StorageService.restoreBackup(jsonStr, user?.id);
     if (success) {
+      const uid = user?.id;
       const [
         loadedSettings,
         loadedBooks,
@@ -1480,31 +1508,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         loadedWheels,
         loadedResults,
       ] = await Promise.all([
-        StorageService.getSettings(),
-        StorageService.getBibleBooks(),
-        StorageService.getReadingPlans(),
-        StorageService.getVerseNotes(),
-        StorageService.getPrayers(),
-        StorageService.getTransactions(),
-        StorageService.getTodos(),
-        StorageService.getSermons(),
-        StorageService.getMemoryVerses(),
-        StorageService.getFastingRecords(),
-        StorageService.getHabits(),
-        StorageService.getDecisionWheels(),
-        StorageService.getDecisionResults(),
+        StorageService.getSettings(uid),
+        StorageService.getBibleBooks(uid),
+        StorageService.getReadingPlans(uid),
+        StorageService.getVerseNotes(uid),
+        StorageService.getPrayers(uid),
+        StorageService.getTransactions(uid),
+        StorageService.getTodos(uid),
+        StorageService.getSermons(uid),
+        StorageService.getMemoryVerses(uid),
+        StorageService.getFastingRecords(uid),
+        StorageService.getHabits(uid),
+        StorageService.getDecisionWheels(uid),
+        StorageService.getDecisionResults(uid),
       ]);
-      setSettings(loadedSettings);
-      setBibleBooks(loadedBooks);
-      setReadingPlans(loadedPlans);
+      setSettings(loadedSettings || DEFAULT_SETTINGS);
+      setBibleBooks(loadedBooks || getCleanBibleBooks());
+      setReadingPlans(loadedPlans || getCleanReadingPlans());
       setVerseNotes(loadedVerseNotes || []);
-      setPrayers(loadedPrayers);
-      setTransactions(loadedTxs);
-      setTodos(loadedTodos);
-      setSermons(loadedSermons);
-      setMemoryVerses(loadedMemoryVerses);
-      setFastingRecords(loadedFasts);
-      setHabits(loadedHabits);
+      setPrayers(loadedPrayers || []);
+      setTransactions(loadedTxs || []);
+      setTodos(loadedTodos || SEED_TODOS);
+      setSermons(loadedSermons || []);
+      setMemoryVerses(loadedMemoryVerses || []);
+      setFastingRecords(loadedFasts || []);
+      setHabits(loadedHabits || []);
       if (loadedWheels && loadedWheels.length > 0) {
         setDecisionWheels(loadedWheels);
         setActiveWheelId(loadedWheels[0].id);

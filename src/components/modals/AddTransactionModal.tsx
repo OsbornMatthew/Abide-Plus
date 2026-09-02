@@ -29,6 +29,7 @@ interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   defaultType?: TransactionType;
+  defaultCategory?: string;
   defaultDate?: string; // YYYY-MM-DD
 }
 
@@ -43,13 +44,13 @@ const INCOME_CATEGORIES: IncomeCategory[] = [
 ];
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  'Debt & Loans',
   'Housing & Rent',
   'Groceries & Food',
   'Transport & Fuel',
   'Utilities & Bills',
   'Healthcare & Meds',
   'Family & Kids',
-  'Debt & Loans',
   'Education',
   'Personal Care',
   'Leisure & Dining',
@@ -80,6 +81,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   onClose,
   defaultType = 'expense',
+  defaultCategory,
   defaultDate,
 }) => {
   const { theme, settings, addTransaction } = useApp();
@@ -89,7 +91,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const todayStr = new Date().toISOString().split('T')[0];
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<string>('Groceries & Food');
+  const [category, setCategory] = useState<string>(defaultCategory || 'Groceries & Food');
   const [note, setNote] = useState('');
   const [recipientOrSource, setRecipientOrSource] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>(defaultDate || todayStr);
@@ -106,18 +108,78 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   useEffect(() => {
     if (visible) {
       setType(defaultType);
-      if (defaultType === 'income') setCategory('Salary');
-      else if (defaultType === 'expense') setCategory('Groceries & Food');
-      else if (defaultType === 'tithe') setCategory('Tithe (10%)');
-      else if (defaultType === 'savings') setCategory('Emergency Fund');
-      else if (defaultType === 'offering') setCategory('Missions & Evang.');
-      else if (defaultType === 'benevolence') setCategory('Benevolence / Alms');
+      if (defaultCategory) {
+        setCategory(defaultCategory);
+      } else {
+        if (defaultType === 'income') setCategory('Salary');
+        else if (defaultType === 'expense') setCategory('Groceries & Food');
+        else if (defaultType === 'tithe') setCategory('Tithe (10%)');
+        else if (defaultType === 'savings') setCategory('Emergency Fund');
+        else if (defaultType === 'offering') setCategory('Missions & Evang.');
+        else if (defaultType === 'benevolence') setCategory('Benevolence / Alms');
+      }
       setAmount('');
       setNote('');
       setRecipientOrSource('');
       setSelectedDate(defaultDate || todayStr);
     }
-  }, [visible, defaultType, defaultDate, todayStr]);
+  }, [visible, defaultType, defaultCategory, defaultDate, todayStr]);
+
+  const getCategoryLabel = (cat: string) => {
+    if (!isTamil) return cat;
+    switch (cat) {
+      case 'Debt & Loans':
+        return 'கடன் & தவணைகள் (EMI)';
+      case 'Housing & Rent':
+        return 'வீட்டு வாடகை';
+      case 'Groceries & Food':
+        return 'மளிகை & உணவு';
+      case 'Transport & Fuel':
+        return 'போக்குவரத்து & எரிபொருள்';
+      case 'Utilities & Bills':
+        return 'மின்சாரம் & கட்டணங்கள்';
+      case 'Healthcare & Meds':
+        return 'மருத்துவம் & மருந்துகள்';
+      case 'Family & Kids':
+        return 'குடும்பம் & குழந்தைகள்';
+      case 'Education':
+        return 'கல்வி & பயிற்சிகள்';
+      case 'Personal Care':
+        return 'தனிநபர் பராமரிப்பு';
+      case 'Leisure & Dining':
+        return 'உணவகம் & பொழுதுபோக்கு';
+      case 'Miscellaneous':
+        return 'இதர செலவுகள்';
+      case 'Salary':
+        return 'சம்பளம்';
+      case 'Business':
+        return 'தொழில் வருமானம்';
+      case 'Freelance':
+        return 'கூலி / பகுதிநேரம்';
+      case 'Investments':
+        return 'முதலீட்டு வருவாய்';
+      case 'Gift':
+        return 'அன்பளிப்பு';
+      case 'Firstfruits':
+        return 'முதற்பலன்';
+      case 'Other Income':
+        return 'பிற வரவுகள்';
+      case 'Emergency Fund':
+        return 'அவசரக்கால நிதி';
+      case 'Future Investments':
+        return 'எதிர்கால முதலீடு';
+      case 'Children Education':
+        return 'பிள்ளைகள் உயர்கல்வி';
+      case 'Home & Land':
+        return 'வீடு & நிலம்';
+      case 'Church Project':
+        return 'சபை திட்ட நிதி';
+      case 'General Savings':
+        return 'பொது சேமிப்பு';
+      default:
+        return cat;
+    }
+  };
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
@@ -462,7 +524,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                           { color: isSelected ? '#000' : theme.text },
                         ]}
                       >
-                        {cat}
+                        {getCategoryLabel(cat)}
                       </Text>
                     </TouchableOpacity>
                   );

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ALL_BIBLE_BOOKS } from '../data/bibleBooks';
-import { READING_PLANS } from '../data/readingPlans';
+import { getCleanBibleBooks } from '../data/bibleBooks';
+import { getCleanReadingPlans } from '../data/readingPlans';
 import { BibleBook, ReadingPlan, PrayerItem, FastingRecord, SermonNote, ScriptureMemoryCard, VerseNote, BibleTranslation } from '../types/spiritual';
 import { Transaction, BudgetGoal, GivingPledge, CurrencySetting, SUPPORTED_CURRENCIES } from '../types/finance';
 import { TodoTask } from '../types/todo';
@@ -46,6 +46,12 @@ const STORAGE_KEYS = {
   HABITS: '@abide_habits',
   DECISION_WHEELS: '@abide_decision_wheels',
   DECISION_RESULTS: '@abide_decision_results',
+};
+
+// Clean helper to scope keys by user ID to guarantee 100% data isolation
+export const getUserKey = (baseKey: string, userId?: string | null): string => {
+  if (!userId) return baseKey;
+  return `${baseKey}_${userId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 };
 
 // Clean default slate for user
@@ -103,141 +109,161 @@ export const StorageService = {
     await AsyncStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   },
 
-  async getBibleBooks(): Promise<BibleBook[]> {
+  async getBibleBooks(userId?: string): Promise<BibleBook[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.BIBLE_BOOKS);
+      const key = getUserKey(STORAGE_KEYS.BIBLE_BOOKS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.BIBLE_BOOKS, JSON.stringify(ALL_BIBLE_BOOKS));
-      return ALL_BIBLE_BOOKS;
+      const clean = getCleanBibleBooks();
+      if (userId) {
+        await AsyncStorage.setItem(key, JSON.stringify(clean));
+      }
+      return clean;
     } catch {
-      return ALL_BIBLE_BOOKS;
+      return getCleanBibleBooks();
     }
   },
 
-  async saveBibleBooks(books: BibleBook[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.BIBLE_BOOKS, JSON.stringify(books));
+  async saveBibleBooks(books: BibleBook[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.BIBLE_BOOKS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(books));
   },
 
-  async getReadingPlans(): Promise<ReadingPlan[]> {
+  async getReadingPlans(userId?: string): Promise<ReadingPlan[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.READING_PLANS);
+      const key = getUserKey(STORAGE_KEYS.READING_PLANS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.READING_PLANS, JSON.stringify(READING_PLANS));
-      return READING_PLANS;
+      const clean = getCleanReadingPlans();
+      if (userId) {
+        await AsyncStorage.setItem(key, JSON.stringify(clean));
+      }
+      return clean;
     } catch {
-      return READING_PLANS;
+      return getCleanReadingPlans();
     }
   },
 
-  async saveReadingPlans(plans: ReadingPlan[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.READING_PLANS, JSON.stringify(plans));
+  async saveReadingPlans(plans: ReadingPlan[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.READING_PLANS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(plans));
   },
 
-  async getVerseNotes(): Promise<VerseNote[]> {
+  async getVerseNotes(userId?: string): Promise<VerseNote[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.VERSE_NOTES);
+      const key = getUserKey(STORAGE_KEYS.VERSE_NOTES, userId);
+      const data = await AsyncStorage.getItem(key);
       return data ? JSON.parse(data) : [];
     } catch {
       return [];
     }
   },
 
-  async saveVerseNotes(notes: VerseNote[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.VERSE_NOTES, JSON.stringify(notes));
+  async saveVerseNotes(notes: VerseNote[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.VERSE_NOTES, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(notes));
   },
 
-  async getPrayers(): Promise<PrayerItem[]> {
+  async getPrayers(userId?: string): Promise<PrayerItem[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.PRAYERS);
+      const key = getUserKey(STORAGE_KEYS.PRAYERS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.PRAYERS, JSON.stringify(SEED_PRAYERS));
       return SEED_PRAYERS;
     } catch {
       return SEED_PRAYERS;
     }
   },
 
-  async savePrayers(prayers: PrayerItem[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.PRAYERS, JSON.stringify(prayers));
+  async savePrayers(prayers: PrayerItem[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.PRAYERS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(prayers));
   },
 
-  async getTransactions(): Promise<Transaction[]> {
+  async getTransactions(userId?: string): Promise<Transaction[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+      const key = getUserKey(STORAGE_KEYS.TRANSACTIONS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(SEED_TRANSACTIONS));
       return SEED_TRANSACTIONS;
     } catch {
       return SEED_TRANSACTIONS;
     }
   },
 
-  async saveTransactions(txs: Transaction[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+  async saveTransactions(txs: Transaction[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.TRANSACTIONS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(txs));
   },
 
-  async getTodos(): Promise<TodoTask[]> {
+  async getTodos(userId?: string): Promise<TodoTask[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.TODOS);
+      const key = getUserKey(STORAGE_KEYS.TODOS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.TODOS, JSON.stringify(SEED_TODOS));
       return SEED_TODOS;
     } catch {
       return SEED_TODOS;
     }
   },
 
-  async saveTodos(todos: TodoTask[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.TODOS, JSON.stringify(todos));
+  async saveTodos(todos: TodoTask[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.TODOS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(todos));
   },
 
-  async getSermons(): Promise<SermonNote[]> {
+  async getSermons(userId?: string): Promise<SermonNote[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.SERMONS);
+      const key = getUserKey(STORAGE_KEYS.SERMONS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.SERMONS, JSON.stringify(SEED_SERMONS));
       return SEED_SERMONS;
     } catch {
       return SEED_SERMONS;
     }
   },
 
-  async saveSermons(sermons: SermonNote[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.SERMONS, JSON.stringify(sermons));
+  async saveSermons(sermons: SermonNote[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.SERMONS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(sermons));
   },
 
-  async getMemoryVerses(): Promise<ScriptureMemoryCard[]> {
+  async getMemoryVerses(userId?: string): Promise<ScriptureMemoryCard[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.MEMORY_VERSES);
+      const key = getUserKey(STORAGE_KEYS.MEMORY_VERSES, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) return JSON.parse(data);
-      await AsyncStorage.setItem(STORAGE_KEYS.MEMORY_VERSES, JSON.stringify(SEED_MEMORY_VERSES));
       return SEED_MEMORY_VERSES;
     } catch {
       return SEED_MEMORY_VERSES;
     }
   },
 
-  async saveMemoryVerses(verses: ScriptureMemoryCard[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.MEMORY_VERSES, JSON.stringify(verses));
+  async saveMemoryVerses(verses: ScriptureMemoryCard[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.MEMORY_VERSES, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(verses));
   },
 
-  async getFastingRecords(): Promise<FastingRecord[]> {
+  async getFastingRecords(userId?: string): Promise<FastingRecord[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.FASTING);
+      const key = getUserKey(STORAGE_KEYS.FASTING, userId);
+      const data = await AsyncStorage.getItem(key);
       return data ? JSON.parse(data) : [];
     } catch {
       return [];
     }
   },
 
-  async saveFastingRecords(records: FastingRecord[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.FASTING, JSON.stringify(records));
+  async saveFastingRecords(records: FastingRecord[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.FASTING, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(records));
   },
 
   // Habits Storage
-  async getHabits(): Promise<Habit[]> {
+  async getHabits(userId?: string): Promise<Habit[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.HABITS);
+      const key = getUserKey(STORAGE_KEYS.HABITS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -248,14 +274,16 @@ export const StorageService = {
     }
   },
 
-  async saveHabits(habits: Habit[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habits));
+  async saveHabits(habits: Habit[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.HABITS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(habits));
   },
 
   // Decision Wheels Storage
-  async getDecisionWheels(): Promise<DecisionWheel[]> {
+  async getDecisionWheels(userId?: string): Promise<DecisionWheel[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_WHEELS);
+      const key = getUserKey(STORAGE_KEYS.DECISION_WHEELS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -266,14 +294,16 @@ export const StorageService = {
     }
   },
 
-  async saveDecisionWheels(wheels: DecisionWheel[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.DECISION_WHEELS, JSON.stringify(wheels));
+  async saveDecisionWheels(wheels: DecisionWheel[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.DECISION_WHEELS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(wheels));
   },
 
   // Decision History Results Storage
-  async getDecisionResults(): Promise<DecisionResult[]> {
+  async getDecisionResults(userId?: string): Promise<DecisionResult[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEYS.DECISION_RESULTS);
+      const key = getUserKey(STORAGE_KEYS.DECISION_RESULTS, userId);
+      const data = await AsyncStorage.getItem(key);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -284,26 +314,27 @@ export const StorageService = {
     }
   },
 
-  async saveDecisionResults(results: DecisionResult[]): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.DECISION_RESULTS, JSON.stringify(results));
+  async saveDecisionResults(results: DecisionResult[], userId?: string): Promise<void> {
+    const key = getUserKey(STORAGE_KEYS.DECISION_RESULTS, userId);
+    await AsyncStorage.setItem(key, JSON.stringify(results));
   },
 
   // Export full backup as JSON
-  async exportFullBackup(): Promise<string> {
+  async exportFullBackup(userId?: string): Promise<string> {
     const [settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits, decisionWheels, decisionResults] = await Promise.all([
       this.getSettings(),
-      this.getBibleBooks(),
-      this.getReadingPlans(),
-      this.getVerseNotes(),
-      this.getPrayers(),
-      this.getTransactions(),
-      this.getTodos(),
-      this.getSermons(),
-      this.getMemoryVerses(),
-      this.getFastingRecords(),
-      this.getHabits(),
-      this.getDecisionWheels(),
-      this.getDecisionResults(),
+      this.getBibleBooks(userId),
+      this.getReadingPlans(userId),
+      this.getVerseNotes(userId),
+      this.getPrayers(userId),
+      this.getTransactions(userId),
+      this.getTodos(userId),
+      this.getSermons(userId),
+      this.getMemoryVerses(userId),
+      this.getFastingRecords(userId),
+      this.getHabits(userId),
+      this.getDecisionWheels(userId),
+      this.getDecisionResults(userId),
     ]);
 
     const backup = {
@@ -330,24 +361,24 @@ export const StorageService = {
   },
 
   // Restore backup from JSON
-  async restoreBackup(jsonString: string): Promise<boolean> {
+  async restoreBackup(jsonString: string, userId?: string): Promise<boolean> {
     try {
       const parsed = JSON.parse(jsonString);
       if (!parsed.data) return false;
       const { settings, books, plans, verseNotes, prayers, txs, todos, sermons, memoryVerses, fasts, habits, decisionWheels, decisionResults } = parsed.data;
       if (settings) await this.saveSettings(settings);
-      if (books) await this.saveBibleBooks(books);
-      if (plans) await this.saveReadingPlans(plans);
-      if (verseNotes) await this.saveVerseNotes(verseNotes);
-      if (prayers) await this.savePrayers(prayers);
-      if (txs) await this.saveTransactions(txs);
-      if (todos) await this.saveTodos(todos);
-      if (sermons) await this.saveSermons(sermons);
-      if (memoryVerses) await this.saveMemoryVerses(memoryVerses);
-      if (fasts) await this.saveFastingRecords(fasts);
-      if (habits) await this.saveHabits(habits);
-      if (decisionWheels) await this.saveDecisionWheels(decisionWheels);
-      if (decisionResults) await this.saveDecisionResults(decisionResults);
+      if (books) await this.saveBibleBooks(books, userId);
+      if (plans) await this.saveReadingPlans(plans, userId);
+      if (verseNotes) await this.saveVerseNotes(verseNotes, userId);
+      if (prayers) await this.savePrayers(prayers, userId);
+      if (txs) await this.saveTransactions(txs, userId);
+      if (todos) await this.saveTodos(todos, userId);
+      if (sermons) await this.saveSermons(sermons, userId);
+      if (memoryVerses) await this.saveMemoryVerses(memoryVerses, userId);
+      if (fasts) await this.saveFastingRecords(fasts, userId);
+      if (habits) await this.saveHabits(habits, userId);
+      if (decisionWheels) await this.saveDecisionWheels(decisionWheels, userId);
+      if (decisionResults) await this.saveDecisionResults(decisionResults, userId);
       return true;
     } catch {
       return false;
