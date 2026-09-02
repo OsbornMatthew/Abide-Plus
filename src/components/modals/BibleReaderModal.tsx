@@ -44,6 +44,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
   const {
     theme,
     settings,
+    bibleBooks,
     toggleChapterRead,
     verseNotes,
     addVerseNote,
@@ -70,21 +71,26 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
     }
   }, [visible, initialChapter, book]);
 
+  const liveBook = useMemo(() => {
+    if (!book) return null;
+    return bibleBooks.find((b) => b.id === book.id) || book;
+  }, [bibleBooks, book]);
+
   // Notes belonging exclusively to this specific chapter
   const chapterNotes = useMemo(() => {
-    if (!book) return [];
+    if (!liveBook) return [];
     return verseNotes.filter(
-      (n) => n.bookId === book.id && n.chapter === currentChapter
+      (n) => n.bookId === liveBook.id && n.chapter === currentChapter
     );
-  }, [verseNotes, book, currentChapter]);
+  }, [verseNotes, liveBook, currentChapter]);
 
-  if (!book) return null;
+  if (!liveBook) return null;
 
-  const isRead = book.readChapters?.includes(currentChapter) || false;
+  const isRead = liveBook.readChapters?.includes(currentChapter) || false;
 
   const handleShareChapter = async () => {
     try {
-      const bookTitle = isTamil ? book.nameTa : book.nameEn;
+      const bookTitle = isTamil ? liveBook.nameTa : liveBook.nameEn;
       const notesSample = chapterNotes
         .map((n) => `• ${n.verseRefEn}\n${n.verseText ? `"${n.verseText}"\n` : ''}${n.noteText}`)
         .join('\n\n');
@@ -98,7 +104,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
   // Open clean blank note editor
   const handleOpenNewNote = () => {
     setEditingNoteId(null);
-    const defaultRef = `${book.nameEn} ${currentChapter}:1`;
+    const defaultRef = `${liveBook.nameEn} ${currentChapter}:1`;
     setManualReferenceInput(defaultRef);
     setManualVerseTextInput('');
     setManualNoteInput('');
@@ -108,7 +114,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
 
   const handleEditNote = (note: VerseNote) => {
     setEditingNoteId(note.id);
-    setManualReferenceInput(note.verseRefEn || `${book.nameEn} ${currentChapter}:1`);
+    setManualReferenceInput(note.verseRefEn || `${liveBook.nameEn} ${currentChapter}:1`);
     setManualVerseTextInput(note.verseText || '');
     setManualNoteInput(note.noteText || '');
     setSelectedHighlightColor(note.colorHighlight || '#F59E0B');
@@ -121,8 +127,8 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
       return;
     }
 
-    const refEn = manualReferenceInput.trim() || `${book.nameEn} ${currentChapter}`;
-    const refTa = isTamil ? `${book.nameTa} ${currentChapter}` : refEn;
+    const refEn = manualReferenceInput.trim() || `${liveBook.nameEn} ${currentChapter}`;
+    const refTa = isTamil ? `${liveBook.nameTa} ${currentChapter}` : refEn;
 
     if (editingNoteId) {
       await updateVerseNote(editingNoteId, {
@@ -134,7 +140,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
       });
     } else {
       await addVerseNote({
-        bookId: book.id,
+        bookId: liveBook.id,
         chapter: currentChapter,
         verseRefEn: refEn,
         verseRefTa: refTa,
@@ -162,10 +168,10 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
 
           <View style={styles.bookTitleCol}>
             <Text style={[styles.topBookTitle, { color: theme.text }]} numberOfLines={1}>
-              {isTamil ? book.nameTa : book.nameEn} {currentChapter}
+              {isTamil ? liveBook.nameTa : liveBook.nameEn} {currentChapter}
             </Text>
             <Text style={[styles.topTranslationSub, { color: theme.primary }]}>
-              {isTamil ? book.nameEn : book.nameTa} • {isTamil ? `${currentChapter}-ம் அதிகாரம்` : `Chapter ${currentChapter}`}
+              {isTamil ? liveBook.nameEn : liveBook.nameTa} • {isTamil ? `${currentChapter}-ம் அதிகாரம்` : `Chapter ${currentChapter}`}
             </Text>
           </View>
 
@@ -208,7 +214,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
           <View style={[styles.chapterHeaderCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <BookOpen size={24} color={theme.primary} style={{ marginBottom: 4 }} />
             <Text style={[styles.chapterHeadingText, { color: theme.text }]}>
-              {isTamil ? book.nameTa : book.nameEn}
+              {isTamil ? liveBook.nameTa : liveBook.nameEn}
             </Text>
             <Text style={[styles.chapterNumberBig, { color: theme.primary }]}>
               {isTamil ? `${currentChapter}-ம் அதிகாரம்` : `Chapter ${currentChapter}`}
@@ -234,7 +240,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
                   <View style={styles.verseCardHeader}>
                     <View style={styles.refPill}>
                       <Text style={[styles.verseRefTitle, { color: item.colorHighlight || theme.primary }]}>
-                        📖 {item.verseRefEn || `${book.nameEn} ${currentChapter}`}
+                        📖 {item.verseRefEn || `${liveBook.nameEn} ${currentChapter}`}
                       </Text>
                     </View>
 
@@ -295,8 +301,8 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
               </Text>
               <Text style={[styles.blankSub, { color: theme.textMuted }]}>
                 {isTamil
-                  ? `இந்த ${book.nameTa} ${currentChapter}-ம் அதிகாரத்திற்கான வசனங்கள் (எ.கா. Genesis 1:1, Genesis 1:30) மற்றும் உமது தியானக் குறிப்புகளைச் சேர்க்கவும்.`
-                  : `Record Scripture verses (e.g. Genesis 1:1, Genesis 1:30) and your study notes for ${book.nameEn} ${currentChapter}.`}
+                  ? `இந்த ${liveBook.nameTa} ${currentChapter}-ம் அதிகாரத்திற்கான வசனங்கள் (எ.கா. Genesis 1:1, Genesis 1:30) மற்றும் உமது தியானக் குறிப்புகளைச் சேர்க்கவும்.`
+                  : `Record Scripture verses (e.g. Genesis 1:1, Genesis 1:30) and your study notes for ${liveBook.nameEn} ${currentChapter}.`}
               </Text>
 
               <TouchableOpacity
@@ -318,17 +324,20 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
               style={[
                 styles.markReadBtn,
                 {
-                  backgroundColor: isRead ? theme.success : theme.primary,
+                  backgroundColor: isRead ? '#10B981' : theme.cardAlt,
+                  borderColor: isRead ? '#10B981' : theme.primary,
+                  borderWidth: 1.5,
                 },
               ]}
-              onPress={() => toggleChapterRead(book.id, currentChapter)}
+              onPress={() => toggleChapterRead(liveBook.id, currentChapter)}
+              activeOpacity={0.8}
             >
-              <CheckCircle2 size={16} color={isRead ? '#FFF' : '#000'} />
-              <Text style={[styles.markReadBtnText, { color: isRead ? '#FFF' : '#000' }]}>
+              <CheckCircle2 size={17} color={isRead ? '#FFF' : theme.primary} />
+              <Text style={[styles.markReadBtnText, { color: isRead ? '#FFF' : theme.text, fontWeight: '800' }]}>
                 {isRead
                   ? isTamil
-                    ? 'வாசித்து முடிக்கப்பட்டது ✓'
-                    : 'Chapter Completed ✓'
+                    ? 'வாசித்து முடிக்கப்பட்டது ✓ (நீக்க மீண்டும் தட்டவும்)'
+                    : 'Chapter Completed ✓ (Tap again to Unmark)'
                   : isTamil
                   ? 'அதிகாரத்தை முடித்ததாகக் குறிக்க'
                   : 'Mark Chapter as Read'}
@@ -355,10 +364,10 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
                 style={[
                   styles.pageBtn,
                   { backgroundColor: theme.card, borderColor: theme.cardBorder },
-                  currentChapter >= book.totalChapters && { opacity: 0.4 },
+                  currentChapter >= liveBook.totalChapters && { opacity: 0.4 },
                 ]}
-                disabled={currentChapter >= book.totalChapters}
-                onPress={() => setCurrentChapter((c) => Math.min(book.totalChapters, c + 1))}
+                disabled={currentChapter >= liveBook.totalChapters}
+                onPress={() => setCurrentChapter((c) => Math.min(liveBook.totalChapters, c + 1))}
               >
                 <Text style={[styles.pageBtnText, { color: theme.text }]}>
                   {isTamil ? 'அடுத்த அதிகாரம்' : 'Next Chapter'}
@@ -403,7 +412,7 @@ export const BibleReaderModal: React.FC<BibleReaderModalProps> = ({
                   style={[styles.referenceTextInput, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
                   value={manualReferenceInput}
                   onChangeText={setManualReferenceInput}
-                  placeholder={`e.g. ${book.nameEn} ${currentChapter}:1 or ${book.nameEn} ${currentChapter}:30`}
+                  placeholder={`e.g. ${liveBook.nameEn} ${currentChapter}:1 or ${liveBook.nameEn} ${currentChapter}:30`}
                   placeholderTextColor={theme.textMuted}
                   autoFocus
                 />

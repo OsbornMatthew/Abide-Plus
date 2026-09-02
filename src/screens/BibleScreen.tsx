@@ -675,7 +675,24 @@ export const BibleScreen: React.FC = () => {
                       {isTamil ? 'அழிக்க' : 'Reset'}
                     </Text>
                   </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.quickMarkBtn, { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                    onPress={() => openBookReader(currentActiveBook, 1)}
+                  >
+                    <BookOpen size={14} color="#000" />
+                    <Text style={[styles.quickMarkText, { color: '#000', fontWeight: '800' }]}>
+                      {isTamil ? 'குறிப்புகள்' : 'Reader'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+
+                {/* Tap Hint */}
+                <Text style={{ fontSize: 10, color: theme.textMuted, marginBottom: 8, fontStyle: 'italic' }}>
+                  {isTamil
+                    ? '💡 அதிகாரத்தைத் தட்டி வாசித்ததாகக் குறிக்கவும் / நீக்கவும்'
+                    : '💡 Tap chapter to mark/unmark • Long press to open notes'}
+                </Text>
 
                 {/* Chapter Numbers Grid */}
                 <ScrollView contentContainerStyle={styles.chapterGridScroll} showsVerticalScrollIndicator={false}>
@@ -685,25 +702,31 @@ export const BibleScreen: React.FC = () => {
                       return (
                         <TouchableOpacity
                           key={ch}
+                          activeOpacity={0.7}
                           style={[
                             styles.chapterGridBox,
                             {
-                              backgroundColor: isRead ? theme.success : theme.cardAlt,
-                              borderColor: isRead ? theme.success : theme.cardBorder,
+                              backgroundColor: isRead ? '#10B981' : theme.cardAlt,
+                              borderColor: isRead ? '#10B981' : theme.cardBorder,
+                              shadowColor: isRead ? '#10B981' : 'transparent',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: isRead ? 0.35 : 0,
+                              shadowRadius: 4,
+                              elevation: isRead ? 3 : 0,
                             },
                           ]}
-                          onPress={() => openBookReader(currentActiveBook, ch)}
-                          onLongPress={() => toggleChapterRead(currentActiveBook.id, ch)}
+                          onPress={() => toggleChapterRead(currentActiveBook.id, ch)}
+                          onLongPress={() => openBookReader(currentActiveBook, ch)}
                         >
                           <Text
                             style={[
                               styles.chapterGridNumber,
-                              { color: isRead ? '#FFF' : theme.text },
+                              { color: isRead ? '#FFFFFF' : theme.text, fontWeight: '800' },
                             ]}
                           >
                             {ch}
                           </Text>
-                          {isRead && <Check size={9} color="#FFF" style={{ marginTop: 1 }} />}
+                          {isRead && <Check size={10} color="#FFFFFF" style={{ marginTop: 1 }} />}
                         </TouchableOpacity>
                       );
                     })}
