@@ -38,6 +38,7 @@ import {
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { getLocalDateString } from '../utils/dateUtils';
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const {
@@ -81,7 +82,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     month: 'short',
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const todayTodos = todos.filter(
     (t) => !t.dueDate || t.dueDate === todayStr || t.isDailyRoutine
   );
@@ -339,6 +340,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               progress={dailyTaskStats.completionRatio}
               color={theme.taskColor}
               bgColor={theme.ringBg}
+              showPercent={false}
+              centerText={`${dailyTaskStats.completedToday}/${dailyTaskStats.totalToday}`}
             />
             <Text style={[styles.ringTitle, { color: theme.text }]}>
               {isTamil ? 'பணிகள்' : 'Tasks'}
@@ -363,7 +366,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               progress={financialSummary.givingRatio > 0 ? Math.min(100, (financialSummary.monthlyTithes / (financialSummary.expectedTithe || 1)) * 100) : 0}
               color={theme.titheColor}
               bgColor={theme.ringBg}
-              centerText={financialSummary.monthlyTithes >= financialSummary.expectedTithe && financialSummary.expectedTithe > 0 ? '10% ✓' : undefined}
+              showPercent={false}
             />
             <Text style={[styles.ringTitle, { color: theme.text }]}>
               {isTamil ? 'தசமபாகம்' : 'Tithe'}

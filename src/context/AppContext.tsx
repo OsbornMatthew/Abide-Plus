@@ -27,6 +27,7 @@ import { AuthService } from '../services/authStorage';
 import { FirebaseSyncService, UserCloudData } from '../services/firebase';
 import { darkTheme, lightTheme, ColorPalette } from '../theme/colors';
 import { DAILY_VERSES } from '../data/dailyVerses';
+import { getLocalDateString, getYesterdayLocalDateString, calculateHabitStreak } from '../utils/dateUtils';
 
 interface AppContextType {
   // Auth & User
@@ -263,7 +264,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setBibleBooks(loadedBooks);
         setReadingPlans(loadedPlans);
 
-        // Clean out default seed habits so users start with their own
+        // Clean out default seed habits so users start with their own, and compute accurate streaks
         const defaultHabitIds = new Set([
           'habit-morning-prayer',
           'habit-bible-reading',
@@ -272,7 +273,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           'habit-gratitude',
           'habit-stewardship',
         ]);
-        const userHabits = (loadedHabits || []).filter((h: any) => h && h.id && !defaultHabitIds.has(h.id));
+        const userHabits = (loadedHabits || [])
+          .filter((h: any) => h && h.id && !defaultHabitIds.has(h.id))
+          .map((h: Habit) => {
+            const allDates = Array.from(new Set(h.completedDates || [])).sort();
+            const streak = calculateHabitStreak(allDates);
+            const best = Math.max(h.bestStreak || 0, streak);
+            return {
+              ...h,
+              completedDates: allDates,
+              currentStreak: streak,
+              bestStreak: best,
+            };
+          });
         setHabits(userHabits);
         await StorageService.saveHabits(userHabits);
         syncUserCloud({ habits: userHabits });
@@ -308,7 +321,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let cleanTodos = (loadedTodos || []).filter((t: any) => t && t.id !== 'todo-1' && t.id !== 'todo-2');
         const hasBible = cleanTodos.some((t: any) => t.id === 'todo-daily-bible' || t.title === 'Read Bible Today');
         const hasPrayer = cleanTodos.some((t: any) => t.id === 'todo-daily-prayer' || t.title === 'Prayer Today');
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateString();
 
         const toPrepend: any[] = [];
         if (!hasBible) {
@@ -486,19 +499,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         StorageService.saveReadingPlans(cloud.readingPlans);
       }
       if (cloud.habits && Array.isArray(cloud.habits)) {
-        const todayStr = new Date().toISOString().split('T')[0];
         const sanitizedHabits = cloud.habits.map((h: any) => {
-          const isDoneToday = (h.completedDates || []).includes(todayStr);
-          const cleanDates = isDoneToday ? [todayStr] : [];
+          const allDates = Array.from(new Set(h.completedDates || [])).sort();
+          const streak = calculateHabitStreak(allDates);
+          const best = Math.max(h.bestStreak || 0, streak);
           return {
             ...h,
-            completedDates: cleanDates,
-            currentStreak: isDoneToday ? 1 : 0,
-            bestStreak: isDoneToday ? 1 : 0,
+            completedDates: allDates,
+            currentStreak: streak,
+            bestStreak: best,
           };
         });
         setHabits(sanitizedHabits);
         StorageService.saveHabits(sanitizedHabits);
+      }
+      if (cloud.userProfile && typeof cloud.userProfile === 'object') {
+        setUser((prev) => {
+          if (!prev) return cloud.userProfile!;
+          return {
+            ...prev,
+            ...cloud.userProfile,
+            createdAt: prev.createdAt || cloud.userProfile.createdAt,
+            photoURL: cloud.userProfile.photoURL || prev.photoURL,
+          };
+        });
+        AuthService.setActiveUser(cloud.userProfile);
+        AuthService.saveUserToSavedList(cloud.userProfile);
       }
       if (cloud.settings && typeof cloud.settings === 'object') {
         setSettings((prev) => ({ ...prev, ...cloud.settings }));
@@ -1088,38 +1114,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ fastingRecords: updated });
   };
 
-  // Habit Helper: Calculate Streak
-  const calculateStreak = (dates: string[]): number => {
-    if (!dates || dates.length === 0) return 0;
-    const sorted = Array.from(new Set(dates)).sort().reverse();
-    const today = new Date().toISOString().split('T')[0];
-    const yesterdayDate = new Date(Date.now() - 86400000);
-    const yesterday = yesterdayDate.toISOString().split('T')[0];
-
-    if (!sorted.includes(today) && !sorted.includes(yesterday)) {
-      return 0;
-    }
-
-    let streak = 0;
-    let checkDate = new Date();
-    if (!sorted.includes(today)) {
-      checkDate = yesterdayDate;
-    }
-
-    while (true) {
-      const dStr = checkDate.toISOString().split('T')[0];
-      if (sorted.includes(dStr)) {
-        streak++;
-        checkDate = new Date(checkDate.getTime() - 86400000);
-      } else {
-        break;
-      }
-    }
-    return streak;
-  };
-
   const toggleHabit = async (id: string, dateStr?: string) => {
-    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const targetDate = dateStr || getLocalDateString();
     const updated = habits.map((h) => {
       if (h.id === id) {
         const datesSet = new Set(h.completedDates || []);
@@ -1129,7 +1125,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           datesSet.add(targetDate);
         }
         const newDates = Array.from(datesSet).sort();
-        const streak = calculateStreak(newDates);
+        const streak = calculateHabitStreak(newDates);
         const best = Math.max(h.bestStreak || 0, streak);
         return {
           ...h,
@@ -1164,7 +1160,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = habits.map((h) => {
       if (h.id === id) {
         const merged = { ...h, ...updates };
-        const streak = calculateStreak(merged.completedDates || []);
+        const streak = calculateHabitStreak(merged.completedDates || []);
         return { ...merged, currentStreak: streak, bestStreak: Math.max(merged.bestStreak || 0, streak) };
       }
       return h;
@@ -1182,7 +1178,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const habitStats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const totalHabits = habits.length;
     const completedToday = habits.filter((h) => h.completedDates?.includes(today)).length;
     const completionRatio = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;

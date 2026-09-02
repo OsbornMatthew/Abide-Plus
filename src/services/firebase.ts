@@ -143,13 +143,17 @@ export const FirebaseSyncService = {
       await updateProfile(fbUser, { displayName: name });
     }
 
+    const createdTime = fbUser.metadata?.creationTime
+      ? new Date(fbUser.metadata.creationTime).toISOString()
+      : new Date().toISOString();
+
     const profile: UserProfile = {
       id: fbUser.uid,
       email: cleanEmail,
       displayName: name,
       avatarColor: "#D4AF37",
       photoURL: fbUser.photoURL || undefined,
-      createdAt: new Date().toISOString(),
+      createdAt: createdTime,
       lastLoginAt: new Date().toISOString(),
     };
 
@@ -163,13 +167,23 @@ export const FirebaseSyncService = {
     const res = await signInWithEmailAndPassword(auth, cleanEmail, pass);
     const fbUser = res.user;
 
+    // Load existing profile from Firestore to preserve true joined date & avatar
+    const existingCloud = await this.loadUserData(fbUser.uid);
+    const existingProfile = existingCloud?.userProfile;
+
+    const createdTime =
+      existingProfile?.createdAt ||
+      (fbUser.metadata?.creationTime
+        ? new Date(fbUser.metadata.creationTime).toISOString()
+        : new Date().toISOString());
+
     const profile: UserProfile = {
       id: fbUser.uid,
       email: cleanEmail,
-      displayName: fbUser.displayName || cleanEmail.split("@")[0] || "Believer",
-      avatarColor: "#10B981",
-      photoURL: fbUser.photoURL || undefined,
-      createdAt: new Date().toISOString(),
+      displayName: fbUser.displayName || existingProfile?.displayName || cleanEmail.split("@")[0] || "Believer",
+      avatarColor: existingProfile?.avatarColor || "#10B981",
+      photoURL: fbUser.photoURL || existingProfile?.photoURL || undefined,
+      createdAt: createdTime,
       lastLoginAt: new Date().toISOString(),
     };
 
@@ -187,13 +201,23 @@ export const FirebaseSyncService = {
       const res = await signInWithPopup(auth, provider);
       const fbUser = res.user;
 
+      // Load existing profile from Firestore to preserve true joined date & avatar
+      const existingCloud = await this.loadUserData(fbUser.uid);
+      const existingProfile = existingCloud?.userProfile;
+
+      const createdTime =
+        existingProfile?.createdAt ||
+        (fbUser.metadata?.creationTime
+          ? new Date(fbUser.metadata.creationTime).toISOString()
+          : new Date().toISOString());
+
       const profile: UserProfile = {
         id: fbUser.uid,
         email: fbUser.email || "user@abide.plus",
-        displayName: fbUser.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Believer"),
-        avatarColor: "#4285F4",
-        photoURL: fbUser.photoURL || undefined,
-        createdAt: new Date().toISOString(),
+        displayName: fbUser.displayName || existingProfile?.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Believer"),
+        avatarColor: existingProfile?.avatarColor || "#4285F4",
+        photoURL: fbUser.photoURL || existingProfile?.photoURL || undefined,
+        createdAt: createdTime,
         lastLoginAt: new Date().toISOString(),
       };
 

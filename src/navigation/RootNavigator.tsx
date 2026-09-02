@@ -1,7 +1,7 @@
-import React from 'react';
-import { StyleSheet, View, Text, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, Platform, BackHandler } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
 
 // Screens
@@ -27,9 +27,67 @@ const Tab = createBottomTabNavigator();
 export const RootNavigator: React.FC = () => {
   const { theme, settings, habitStats, bibleProgress } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
+  const navigationRef = useNavigationContainerRef();
+  const currentRouteNameRef = useRef<string>('Home');
+
+  useEffect(() => {
+    // Handle Android hardware back press
+    const onBackPress = () => {
+      const currentRoute = navigationRef.getCurrentRoute()?.name;
+      if (currentRoute && currentRoute !== 'Home') {
+        navigationRef.navigate('Home' as never);
+        return true; // Handled
+      }
+      return false; // Exit app only on Home screen
+    };
+
+    const backHandlerSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // Handle Web browser back gesture / popstate to prevent closing tab
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        window.history.pushState({ tab: 'Home' }, '', window.location.href);
+      } catch {}
+
+      const onPopState = () => {
+        const currentRoute = navigationRef.getCurrentRoute()?.name;
+        if (currentRoute && currentRoute !== 'Home') {
+          navigationRef.navigate('Home' as never);
+          try {
+            window.history.pushState({ tab: 'Home' }, '', window.location.href);
+          } catch {}
+        } else {
+          try {
+            window.history.pushState({ tab: 'Home' }, '', window.location.href);
+          } catch {}
+        }
+      };
+
+      window.addEventListener('popstate', onPopState);
+      return () => {
+        backHandlerSubscription.remove();
+        window.removeEventListener('popstate', onPopState);
+      };
+    }
+
+    return () => {
+      backHandlerSubscription.remove();
+    };
+  }, []);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onStateChange={() => {
+        const routeName = navigationRef.getCurrentRoute()?.name || 'Home';
+        currentRouteNameRef.current = routeName;
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          try {
+            window.history.pushState({ tab: routeName }, '', window.location.href);
+          } catch {}
+        }
+      }}
+    >
       <Tab.Navigator
         screenOptions={{
           headerShown: false,

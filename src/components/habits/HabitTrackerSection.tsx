@@ -32,6 +32,7 @@ import {
   EyeOff,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { getLocalDateString, getPastNDays } from '../../utils/dateUtils';
 
 const CATEGORIES: { label: string; labelTa: string; key: HabitCategory | 'All' }[] = [
   { label: 'All', labelTa: 'அனைத்தும்', key: 'All' },
@@ -62,16 +63,8 @@ export const HabitTrackerSection: React.FC = () => {
   const [habitColor, setHabitColor] = useState('#F59E0B');
   const [habitIsPrivate, setHabitIsPrivate] = useState(false);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  // Past 7 days calculation
-  const past7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000);
-    const dateStr = d.toISOString().split('T')[0];
-    const dayName = d.toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', { weekday: 'narrow' });
-    const dayNum = d.getDate();
-    return { dateStr, dayName, dayNum, isToday: dateStr === todayStr };
-  });
+  const todayStr = getLocalDateString();
+  const past7Days = getPastNDays(7, isTamil ? 'ta-IN' : 'en-US');
 
   const filteredHabits = habits.filter((h) => {
     if (selectedCategory === 'All') return true;

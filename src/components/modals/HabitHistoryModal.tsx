@@ -21,6 +21,7 @@ import {
   Unlock,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface HabitHistoryModalProps {
   habit: Habit | null;
@@ -56,7 +57,7 @@ export const HabitHistoryModal: React.FC<HabitHistoryModalProps> = ({ habit, vis
   const viewYear = currentDate.getFullYear();
   const viewMonth = currentDate.getMonth(); // 0-indexed
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
 
   // First day of month (0 = Sun, 1 = Mon...)
   const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();

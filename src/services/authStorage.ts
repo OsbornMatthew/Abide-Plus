@@ -62,7 +62,7 @@ export const AuthService = {
     return updatedList;
   },
 
-  async login(email: string, password?: string, displayName?: string): Promise<UserProfile> {
+  async login(email: string, password?: string, displayName?: string, photoURL?: string): Promise<UserProfile> {
     const cleanEmail = email.trim().toLowerCase();
     const saved = await this.getSavedUsers();
     let existing = saved.find((u) => u.email.toLowerCase() === cleanEmail);
@@ -75,12 +75,15 @@ export const AuthService = {
         email: cleanEmail,
         displayName: capitalized,
         avatarColor: ['#F59E0B', '#10B981', '#8B5CF6', '#EC4899', '#06B6D4'][saved.length % 5],
+        photoURL: photoURL || undefined,
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString(),
       };
     } else {
       existing.lastLoginAt = new Date().toISOString();
       if (displayName) existing.displayName = displayName;
+      if (photoURL) existing.photoURL = photoURL;
+      // Preserve existing.createdAt without overwriting
     }
 
     await this.saveUserToSavedList(existing);
