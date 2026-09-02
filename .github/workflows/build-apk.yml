@@ -52,6 +52,11 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Pre-bundle Android Assets and JavaScript
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx expo export:embed --platform android --dev false --entry-file index.ts --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
+
       - name: Set Permissions on gradlew and Hermes
         run: |
           chmod +x android/gradlew
@@ -63,10 +68,7 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon -x lint --stacktrace 2>&1 | tee ../gradle_release.log || ./gradlew assembleDebug --no-daemon -x lint --stacktrace 2>&1 | tee ../gradle_debug.log || true
           cd ..
-          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
-          if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | head -n 1)
-          fi
+          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
           if [ -z "$APK_FILE" ]; then
             echo "::error::No APK file generated in android/app/build/outputs/apk"
             echo "### ❌ Release Build Log (Last 80 lines)" >> $GITHUB_STEP_SUMMARY
