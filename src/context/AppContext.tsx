@@ -319,9 +319,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Ensure Everyday Daily Tasks: Read Bible Today & Prayer Today
         let cleanTodos = (loadedTodos || []).filter((t: any) => t && t.id !== 'todo-1' && t.id !== 'todo-2');
+        const todayStr = getLocalDateString();
+
+        // Refresh daily routines for a new day
+        cleanTodos = cleanTodos.map((t: TodoTask) => {
+          if (t.isDailyRoutine || t.id === 'todo-daily-bible' || t.id === 'todo-daily-prayer') {
+            if (t.dueDate !== todayStr) {
+              return {
+                ...t,
+                dueDate: todayStr,
+                isCompleted: false,
+                completedAt: undefined,
+                subTasks: (t.subTasks || []).map((s) => ({ ...s, isDone: false })),
+              };
+            }
+          }
+          return t;
+        });
+
         const hasBible = cleanTodos.some((t: any) => t.id === 'todo-daily-bible' || t.title === 'Read Bible Today');
         const hasPrayer = cleanTodos.some((t: any) => t.id === 'todo-daily-prayer' || t.title === 'Prayer Today');
-        const todayStr = getLocalDateString();
 
         const toPrepend: any[] = [];
         if (!hasBible) {
@@ -363,9 +380,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const finalTodos = toPrepend.length > 0 ? [...toPrepend, ...cleanTodos] : cleanTodos;
         setTodos(finalTodos);
-        if (toPrepend.length > 0) {
-          await StorageService.saveTodos(finalTodos);
-        }
+        await StorageService.saveTodos(finalTodos);
 
         setSermons(loadedSermons);
         setMemoryVerses(loadedMemoryVerses);
@@ -471,8 +486,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         StorageService.saveTransactions(cloud.transactions);
       }
       if (cloud.todos && Array.isArray(cloud.todos)) {
-        setTodos(cloud.todos);
-        StorageService.saveTodos(cloud.todos);
+        const todayStr = getLocalDateString();
+        const refreshedTodos = cloud.todos.map((t: any) => {
+          if (t.isDailyRoutine || t.id === 'todo-daily-bible' || t.id === 'todo-daily-prayer') {
+            if (t.dueDate !== todayStr) {
+              return {
+                ...t,
+                dueDate: todayStr,
+                isCompleted: false,
+                completedAt: undefined,
+                subTasks: (t.subTasks || []).map((s: any) => ({ ...s, isDone: false })),
+              };
+            }
+          }
+          return t;
+        });
+        setTodos(refreshedTodos);
+        StorageService.saveTodos(refreshedTodos);
       }
       if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
         setVerseNotes(cloud.verseNotes);
@@ -994,10 +1024,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const dailyTaskStats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const todayTasks = todos.filter((t) => !t.dueDate || t.dueDate === today || t.isDailyRoutine);
     const totalToday = todayTasks.length;
-    const completedToday = todayTasks.filter((t) => t.isCompleted).length;
+    const completedToday = todayTasks.filter((t) => t.isCompleted && (!t.dueDate || t.dueDate === today)).length;
     const completionRatio = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
     return {
