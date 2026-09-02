@@ -432,46 +432,192 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!user?.id) return;
 
-    // Load initial cloud data on login
-    FirebaseSyncService.loadUserData(user.id).then((cloud) => {
+    // Helper to load or reset user-specific data to guarantee 100% data isolation
+    const applyUserData = async (cloud: UserCloudData | null, targetUser?: UserProfile | null) => {
       if (cloud) {
         if (cloud.prayers && Array.isArray(cloud.prayers)) {
           setPrayers(cloud.prayers);
-          StorageService.savePrayers(cloud.prayers);
+          await StorageService.savePrayers(cloud.prayers);
+        } else {
+          setPrayers([]);
+          await StorageService.savePrayers([]);
         }
+
         if (cloud.transactions && Array.isArray(cloud.transactions)) {
           setTransactions(cloud.transactions);
-          StorageService.saveTransactions(cloud.transactions);
+          await StorageService.saveTransactions(cloud.transactions);
+        } else {
+          setTransactions([]);
+          await StorageService.saveTransactions([]);
         }
+
         if (cloud.todos && Array.isArray(cloud.todos)) {
-          setTodos(cloud.todos);
-          StorageService.saveTodos(cloud.todos);
+          const todayStr = getLocalDateString();
+          const refreshedTodos = cloud.todos.map((t: any) => {
+            if (t.isDailyRoutine || t.id === 'todo-daily-bible' || t.id === 'todo-daily-prayer') {
+              if (t.dueDate !== todayStr) {
+                return {
+                  ...t,
+                  dueDate: todayStr,
+                  isCompleted: false,
+                  completedAt: undefined,
+                  subTasks: (t.subTasks || []).map((s: any) => ({ ...s, isDone: false })),
+                };
+              }
+            }
+            return t;
+          });
+          setTodos(refreshedTodos);
+          await StorageService.saveTodos(refreshedTodos);
+        } else {
+          setTodos(SEED_TODOS);
+          await StorageService.saveTodos(SEED_TODOS);
         }
+
         if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
           setVerseNotes(cloud.verseNotes);
-          StorageService.saveVerseNotes(cloud.verseNotes);
+          await StorageService.saveVerseNotes(cloud.verseNotes);
+        } else {
+          setVerseNotes([]);
+          await StorageService.saveVerseNotes([]);
         }
+
         if (cloud.sermons && Array.isArray(cloud.sermons)) {
           setSermons(cloud.sermons);
-          StorageService.saveSermons(cloud.sermons);
+          await StorageService.saveSermons(cloud.sermons);
+        } else {
+          setSermons([]);
+          await StorageService.saveSermons([]);
         }
+
         if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
           setMemoryVerses(cloud.memoryVerses);
-          StorageService.saveMemoryVerses(cloud.memoryVerses);
+          await StorageService.saveMemoryVerses(cloud.memoryVerses);
+        } else {
+          setMemoryVerses([]);
+          await StorageService.saveMemoryVerses([]);
         }
+
         if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
           setFastingRecords(cloud.fastingRecords);
-          StorageService.saveFastingRecords(cloud.fastingRecords);
+          await StorageService.saveFastingRecords(cloud.fastingRecords);
+        } else {
+          setFastingRecords([]);
+          await StorageService.saveFastingRecords([]);
         }
+
         if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
           setBibleBooks(cloud.bibleBooks);
-          StorageService.saveBibleBooks(cloud.bibleBooks);
+          await StorageService.saveBibleBooks(cloud.bibleBooks);
+        } else {
+          setBibleBooks(ALL_BIBLE_BOOKS);
+          await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
         }
+
+        if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
+          setReadingPlans(cloud.readingPlans);
+          await StorageService.saveReadingPlans(cloud.readingPlans);
+        } else {
+          setReadingPlans(READING_PLANS);
+          await StorageService.saveReadingPlans(READING_PLANS);
+        }
+
         if (cloud.habits && Array.isArray(cloud.habits)) {
-          setHabits(cloud.habits);
-          StorageService.saveHabits(cloud.habits);
+          const sanitizedHabits = cloud.habits.map((h: any) => {
+            const allDates = Array.from(new Set(h.completedDates || [])).sort();
+            const streak = calculateHabitStreak(allDates);
+            const best = calculateBestHabitStreak(allDates);
+            return {
+              ...h,
+              completedDates: allDates,
+              currentStreak: streak,
+              bestStreak: best,
+            };
+          });
+          setHabits(sanitizedHabits);
+          await StorageService.saveHabits(sanitizedHabits);
+        } else {
+          setHabits([]);
+          await StorageService.saveHabits([]);
+        }
+
+        if (cloud.decisionWheels && Array.isArray(cloud.decisionWheels)) {
+          setDecisionWheels(cloud.decisionWheels);
+          await StorageService.saveDecisionWheels(cloud.decisionWheels);
+          if (cloud.decisionWheels.length > 0) {
+            setActiveWheelId(cloud.decisionWheels[0].id);
+          } else {
+            setActiveWheelId('');
+          }
+        } else {
+          setDecisionWheels([]);
+          await StorageService.saveDecisionWheels([]);
+          setActiveWheelId('');
+        }
+
+        if (cloud.decisionResults && Array.isArray(cloud.decisionResults)) {
+          setDecisionResults(cloud.decisionResults);
+          await StorageService.saveDecisionResults(cloud.decisionResults);
+        } else {
+          setDecisionResults([]);
+          await StorageService.saveDecisionResults([]);
+        }
+
+        if (cloud.settings && typeof cloud.settings === 'object') {
+          setSettings((prev) => ({ ...prev, ...cloud.settings }));
+          await StorageService.saveSettings(cloud.settings);
+        }
+      } else {
+        // Clean slate for brand new user
+        setPrayers([]);
+        setTransactions([]);
+        setHabits([]);
+        setDecisionWheels([]);
+        setDecisionResults([]);
+        setVerseNotes([]);
+        setSermons([]);
+        setMemoryVerses([]);
+        setFastingRecords([]);
+        setTodos(SEED_TODOS);
+        setBibleBooks(ALL_BIBLE_BOOKS);
+        setReadingPlans(READING_PLANS);
+        setActiveWheelId('');
+
+        await StorageService.savePrayers([]);
+        await StorageService.saveTransactions([]);
+        await StorageService.saveHabits([]);
+        await StorageService.saveDecisionWheels([]);
+        await StorageService.saveDecisionResults([]);
+        await StorageService.saveVerseNotes([]);
+        await StorageService.saveSermons([]);
+        await StorageService.saveMemoryVerses([]);
+        await StorageService.saveFastingRecords([]);
+        await StorageService.saveTodos(SEED_TODOS);
+        await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
+        await StorageService.saveReadingPlans(READING_PLANS);
+
+        if (targetUser?.id) {
+          await FirebaseSyncService.syncUserData(targetUser.id, {
+            prayers: [],
+            transactions: [],
+            habits: [],
+            decisionWheels: [],
+            decisionResults: [],
+            verseNotes: [],
+            sermons: [],
+            memoryVerses: [],
+            fastingRecords: [],
+            todos: SEED_TODOS,
+            bibleBooks: ALL_BIBLE_BOOKS,
+            readingPlans: READING_PLANS,
+          });
         }
       }
+    };
+
+    // Load initial cloud data on login
+    FirebaseSyncService.loadUserData(user.id).then((cloud) => {
+      applyUserData(cloud, user);
     });
 
     // Subscribe to realtime changes across devices
@@ -543,6 +689,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setHabits(sanitizedHabits);
         StorageService.saveHabits(sanitizedHabits);
       }
+      if (cloud.decisionWheels && Array.isArray(cloud.decisionWheels)) {
+        setDecisionWheels(cloud.decisionWheels);
+        StorageService.saveDecisionWheels(cloud.decisionWheels);
+        if (cloud.decisionWheels.length > 0) {
+          setActiveWheelId(cloud.decisionWheels[0].id);
+        } else {
+          setActiveWheelId('');
+        }
+      }
+      if (cloud.decisionResults && Array.isArray(cloud.decisionResults)) {
+        setDecisionResults(cloud.decisionResults);
+        StorageService.saveDecisionResults(cloud.decisionResults);
+      }
       if (cloud.userProfile && typeof cloud.userProfile === 'object') {
         setUser((prev) => {
           if (!prev) return cloud.userProfile!;
@@ -587,6 +746,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updatedUsers = await AuthService.getSavedUsers();
     setSavedUsers(updatedUsers);
     await updateSettings({ userName: loggedIn.displayName });
+
+    const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
+    if (!cloud) {
+      // Initialize brand new user in cloud with clean data
+      await FirebaseSyncService.syncUserData(loggedIn.id, {
+        prayers: [],
+        transactions: [],
+        habits: [],
+        decisionWheels: [],
+        decisionResults: [],
+        verseNotes: [],
+        sermons: [],
+        memoryVerses: [],
+        fastingRecords: [],
+        todos: SEED_TODOS,
+        bibleBooks: ALL_BIBLE_BOOKS,
+        readingPlans: READING_PLANS,
+      });
+    }
   };
 
   const loginWithGoogle = async () => {
@@ -597,68 +775,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updatedUsers = await AuthService.getSavedUsers();
     setSavedUsers(updatedUsers);
     await updateSettings({ userName: loggedIn.displayName });
+
+    const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
+    if (!cloud) {
+      await FirebaseSyncService.syncUserData(loggedIn.id, {
+        prayers: [],
+        transactions: [],
+        habits: [],
+        decisionWheels: [],
+        decisionResults: [],
+        verseNotes: [],
+        sermons: [],
+        memoryVerses: [],
+        fastingRecords: [],
+        todos: SEED_TODOS,
+        bibleBooks: ALL_BIBLE_BOOKS,
+        readingPlans: READING_PLANS,
+      });
+    }
   };
 
   const logoutUser = async () => {
     await AuthService.logout();
+    await FirebaseSyncService.logout();
     setUser(null);
+    setPrayers([]);
+    setTransactions([]);
+    setHabits([]);
+    setDecisionWheels([]);
+    setDecisionResults([]);
+    setVerseNotes([]);
+    setSermons([]);
+    setMemoryVerses([]);
+    setFastingRecords([]);
+    setTodos(SEED_TODOS);
+    setBibleBooks(ALL_BIBLE_BOOKS);
+    setReadingPlans(READING_PLANS);
+    setActiveWheelId('');
+    await StorageService.savePrayers([]);
+    await StorageService.saveTransactions([]);
+    await StorageService.saveHabits([]);
+    await StorageService.saveDecisionWheels([]);
+    await StorageService.saveDecisionResults([]);
+    await StorageService.saveVerseNotes([]);
+    await StorageService.saveSermons([]);
+    await StorageService.saveMemoryVerses([]);
+    await StorageService.saveFastingRecords([]);
+    await StorageService.saveTodos(SEED_TODOS);
+    await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
+    await StorageService.saveReadingPlans(READING_PLANS);
   };
 
   const switchUser = async (targetUser: UserProfile) => {
     await AuthService.setActiveUser(targetUser);
     setUser(targetUser);
     await updateSettings({ userName: targetUser.displayName });
-    try {
-      const cloud = await FirebaseSyncService.loadUserData(targetUser.id);
-      if (cloud) {
-        if (cloud.prayers && Array.isArray(cloud.prayers)) {
-          setPrayers(cloud.prayers);
-          await StorageService.savePrayers(cloud.prayers);
-        }
-        if (cloud.transactions && Array.isArray(cloud.transactions)) {
-          setTransactions(cloud.transactions);
-          await StorageService.saveTransactions(cloud.transactions);
-        }
-        if (cloud.todos && Array.isArray(cloud.todos)) {
-          setTodos(cloud.todos);
-          await StorageService.saveTodos(cloud.todos);
-        }
-        if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
-          setVerseNotes(cloud.verseNotes);
-          await StorageService.saveVerseNotes(cloud.verseNotes);
-        }
-        if (cloud.sermons && Array.isArray(cloud.sermons)) {
-          setSermons(cloud.sermons);
-          await StorageService.saveSermons(cloud.sermons);
-        }
-        if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
-          setMemoryVerses(cloud.memoryVerses);
-          await StorageService.saveMemoryVerses(cloud.memoryVerses);
-        }
-        if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
-          setFastingRecords(cloud.fastingRecords);
-          await StorageService.saveFastingRecords(cloud.fastingRecords);
-        }
-        if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks)) {
-          setBibleBooks(cloud.bibleBooks);
-          await StorageService.saveBibleBooks(cloud.bibleBooks);
-        }
-        if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
-          setReadingPlans(cloud.readingPlans);
-          await StorageService.saveReadingPlans(cloud.readingPlans);
-        }
-        if (cloud.habits && Array.isArray(cloud.habits)) {
-          setHabits(cloud.habits);
-          await StorageService.saveHabits(cloud.habits);
-        }
-        if (cloud.settings && typeof cloud.settings === 'object') {
-          setSettings((prev) => ({ ...prev, ...cloud.settings }));
-          await StorageService.saveSettings(cloud.settings);
-        }
-      }
-    } catch (e) {
-      console.warn("Error loading cloud data on switchUser:", e);
-    }
   };
 
   const deleteAccount = async () => {

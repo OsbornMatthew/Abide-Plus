@@ -51,6 +51,8 @@ export interface UserCloudData {
   memoryVerses?: any[];
   fastingRecords?: any[];
   habits?: any[];
+  decisionWheels?: any[];
+  decisionResults?: any[];
   lastSyncedAt?: string;
   userProfile?: UserProfile;
 }
