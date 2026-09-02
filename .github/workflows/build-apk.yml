@@ -22,7 +22,6 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=4096"
       GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2"
       ORG_GRADLE_PROJECT_android.useAndroidX: "true"
-      ANDROID_HOME: "/usr/local/lib/android/sdk"
 
     steps:
       - name: Checkout Repository
@@ -39,6 +38,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26b
+
       - name: Configure Android SDK and Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
@@ -51,11 +55,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
-
-      - name: Pre-bundle Android Assets and JavaScript
-        run: |
-          mkdir -p android/app/src/main/assets
-          npx expo export:embed --platform android --dev false --entry-file index.ts --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/
 
       - name: Set Permissions on gradlew and Hermes
         run: |
@@ -71,13 +70,13 @@ jobs:
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
           if [ -z "$APK_FILE" ]; then
             echo "::error::No APK file generated in android/app/build/outputs/apk"
-            echo "### ❌ Release Build Log (Last 80 lines)" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Release Build Log (Last 100 lines)" >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 gradle_release.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+            tail -n 100 gradle_release.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
             echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "### ❌ Debug Build Log (Last 80 lines)" >> $GITHUB_STEP_SUMMARY
+            echo "### ❌ Debug Build Log (Last 100 lines)" >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 80 gradle_debug.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+            tail -n 100 gradle_debug.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
             echo '```' >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
