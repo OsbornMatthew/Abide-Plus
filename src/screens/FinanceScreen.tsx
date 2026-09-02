@@ -25,8 +25,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowDownLeft,
-  CreditCard,
-  Landmark,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
@@ -41,10 +39,9 @@ export const FinanceScreen: React.FC = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  const [activeFilter, setActiveFilter] = useState<'all' | 'income' | 'expense' | 'debt' | 'giving' | 'savings'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'income' | 'expense' | 'giving' | 'savings'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalDefaultType, setModalDefaultType] = useState<TransactionType>('expense');
-  const [modalDefaultCategory, setModalDefaultCategory] = useState<string | undefined>(undefined);
 
   // Month navigation helpers
   const handlePrevMonth = () => {
@@ -111,11 +108,10 @@ export const FinanceScreen: React.FC = () => {
     });
   }, [transactions, selectedYearMonthStr]);
 
-  // 3. Compute totals specifically for the selected month (including Debt & Loans)
+  // 3. Compute totals specifically for the selected month
   const monthlyMetrics = useMemo(() => {
     let income = 0;
     let expense = 0;
-    let debt = 0;
     let tithes = 0;
     let offerings = 0;
     let benevolence = 0;
@@ -127,10 +123,6 @@ export const FinanceScreen: React.FC = () => {
         income += amt;
       } else if (tx.type === 'expense') {
         expense += amt;
-        const catLow = (tx.category || '').toLowerCase();
-        if (catLow.includes('debt') || catLow.includes('loan') || catLow.includes('கடன்') || catLow.includes('emi')) {
-          debt += amt;
-        }
       } else if (tx.type === 'tithe') {
         tithes += amt;
       } else if (tx.type === 'offering') {
@@ -150,7 +142,6 @@ export const FinanceScreen: React.FC = () => {
     return {
       income,
       expense,
-      debt,
       tithes,
       totalGiving,
       savings,
@@ -162,10 +153,6 @@ export const FinanceScreen: React.FC = () => {
 
   const filteredTransactions = monthlyTransactions.filter((t) => {
     if (activeFilter === 'expense') return t.type === 'expense';
-    if (activeFilter === 'debt') {
-      const catLow = (t.category || '').toLowerCase();
-      return t.type === 'expense' && (catLow.includes('debt') || catLow.includes('loan') || catLow.includes('கடன்') || catLow.includes('emi'));
-    }
     if (activeFilter === 'income') return t.type === 'income';
     if (activeFilter === 'savings') return t.type === 'savings';
     if (activeFilter === 'giving')
@@ -173,10 +160,9 @@ export const FinanceScreen: React.FC = () => {
     return true;
   });
 
-  // Direct open helper for specific transaction types & categories
-  const openModal = (tType: TransactionType, cat?: string) => {
+  // Direct open helper for specific transaction types
+  const openModal = (tType: TransactionType) => {
     setModalDefaultType(tType);
-    setModalDefaultCategory(cat);
     setShowAddModal(true);
   };
 
@@ -307,17 +293,17 @@ export const FinanceScreen: React.FC = () => {
             </View>
           )}
 
-          {/* 5-Column Breakdown for Selected Month: Income | Expense | Debt | Tithe | Savings */}
+          {/* 4-Column Breakdown for Selected Month: Income | Expense | Tithe | Savings */}
           <View style={[styles.balanceBreakdownRow, { borderTopColor: theme.cardBorder }]}>
             {/* Income */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('income')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <ArrowDown size={11} color={theme.incomeColor} />
+                <ArrowDown size={12} color={theme.incomeColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'வரவு' : 'Income'}
                 </Text>
               </View>
-              <Text style={[styles.balanceSubVal, { color: theme.incomeColor }]} numberOfLines={1}>
+              <Text style={[styles.balanceSubVal, { color: theme.incomeColor }]}>
                 +{currencySym}{monthlyMetrics.income.toLocaleString()}
               </Text>
             </TouchableOpacity>
@@ -327,28 +313,13 @@ export const FinanceScreen: React.FC = () => {
             {/* Expense */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('expense')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <ArrowUp size={11} color={theme.expenseColor} />
+                <ArrowUp size={12} color={theme.expenseColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'செலவு' : 'Expense'}
                 </Text>
               </View>
-              <Text style={[styles.balanceSubVal, { color: theme.expenseColor }]} numberOfLines={1}>
+              <Text style={[styles.balanceSubVal, { color: theme.expenseColor }]}>
                 -{currencySym}{monthlyMetrics.expense.toLocaleString()}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={[styles.vertDivider, { backgroundColor: theme.cardBorder }]} />
-
-            {/* Debt */}
-            <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('expense', 'Debt & Loans')} activeOpacity={0.7}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <CreditCard size={11} color="#EF4444" />
-                <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
-                  {isTamil ? 'கடன்' : 'Debt'}
-                </Text>
-              </View>
-              <Text style={[styles.balanceSubVal, { color: '#EF4444' }]} numberOfLines={1}>
-                -{currencySym}{monthlyMetrics.debt.toLocaleString()}
               </Text>
             </TouchableOpacity>
 
@@ -357,12 +328,12 @@ export const FinanceScreen: React.FC = () => {
             {/* Tithe */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('tithe')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <Heart size={10} color={theme.titheColor} />
+                <Heart size={11} color={theme.titheColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'தசமபாகம்' : 'Tithe'}
                 </Text>
               </View>
-              <Text style={[styles.balanceSubVal, { color: theme.titheColor }]} numberOfLines={1}>
+              <Text style={[styles.balanceSubVal, { color: theme.titheColor }]}>
                 {currencySym}{monthlyMetrics.totalGiving.toLocaleString()}
               </Text>
             </TouchableOpacity>
@@ -372,19 +343,19 @@ export const FinanceScreen: React.FC = () => {
             {/* Savings (Coins Icon) */}
             <TouchableOpacity style={styles.balanceSubCol} onPress={() => openModal('savings')} activeOpacity={0.7}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <Coins size={10} color={theme.balanceColor} />
+                <Coins size={11} color={theme.balanceColor} />
                 <Text style={[styles.balanceSubLabel, { color: theme.textMuted }]}>
                   {isTamil ? 'சேமிப்பு' : 'Savings'}
                 </Text>
               </View>
-              <Text style={[styles.balanceSubVal, { color: theme.balanceColor }]} numberOfLines={1}>
+              <Text style={[styles.balanceSubVal, { color: theme.balanceColor }]}>
                 {currencySym}{monthlyMetrics.savings.toLocaleString()}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* 5 DIRECT LOG ACTION TILES (Income | Expense | Debt | Tithe | Savings) */}
+        {/* 4 DIRECT LOG ACTION TILES (Income | Expense | Tithe | Savings) */}
         <View style={styles.actionTilesRow}>
           {/* Income */}
           <TouchableOpacity
@@ -392,7 +363,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('income')}
             activeOpacity={0.8}
           >
-            <ArrowDown size={14} color="#FFF" />
+            <ArrowDown size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'வரவு' : 'Income'}
             </Text>
@@ -404,21 +375,9 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('expense')}
             activeOpacity={0.8}
           >
-            <ArrowUp size={14} color="#FFF" />
+            <ArrowUp size={16} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'செலவு' : 'Expense'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Debt */}
-          <TouchableOpacity
-            style={[styles.directLogTile, { backgroundColor: '#DC2626' }, theme.cardShadow]}
-            onPress={() => openModal('expense', 'Debt & Loans')}
-            activeOpacity={0.8}
-          >
-            <CreditCard size={14} color="#FFF" />
-            <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
-              {isTamil ? 'கடன்' : 'Debt'}
             </Text>
           </TouchableOpacity>
 
@@ -428,7 +387,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('tithe')}
             activeOpacity={0.8}
           >
-            <Heart size={14} color="#000" />
+            <Heart size={15} color="#000" />
             <Text style={[styles.directLogTileText, { color: '#000' }]}>
               {isTamil ? 'தசமபாகம்' : 'Tithe'}
             </Text>
@@ -440,7 +399,7 @@ export const FinanceScreen: React.FC = () => {
             onPress={() => openModal('savings')}
             activeOpacity={0.8}
           >
-            <Coins size={14} color="#FFF" />
+            <Coins size={15} color="#FFF" />
             <Text style={[styles.directLogTileText, { color: '#FFF' }]}>
               {isTamil ? 'சேமிப்பு' : 'Savings'}
             </Text>
@@ -585,7 +544,7 @@ export const FinanceScreen: React.FC = () => {
         </View>
 
         <View style={[styles.filterBar, { backgroundColor: theme.cardAlt }]}>
-          {(['all', 'income', 'expense', 'debt', 'giving', 'savings'] as const).map((filterKey) => {
+          {(['all', 'income', 'expense', 'giving', 'savings'] as const).map((filterKey) => {
             const isSel = activeFilter === filterKey;
             return (
               <TouchableOpacity
@@ -606,10 +565,6 @@ export const FinanceScreen: React.FC = () => {
                     ? isTamil
                       ? 'செலவு'
                       : 'Expense'
-                    : filterKey === 'debt'
-                    ? isTamil
-                      ? 'கடன்'
-                      : 'Debt'
                     : filterKey === 'giving'
                     ? isTamil
                       ? 'தசமபாகம்'
@@ -630,9 +585,7 @@ export const FinanceScreen: React.FC = () => {
               const isInc = tx.type === 'income';
               const isSav = tx.type === 'savings';
               const isGiv = tx.type === 'tithe' || tx.type === 'offering' || tx.type === 'benevolence';
-              const catLow = (tx.category || '').toLowerCase();
-              const isDebt = tx.type === 'expense' && (catLow.includes('debt') || catLow.includes('loan') || catLow.includes('கடன்') || catLow.includes('emi'));
-              const tagColor = isInc ? theme.incomeColor : isSav ? theme.balanceColor : isGiv ? theme.primary : isDebt ? '#DC2626' : theme.expenseColor;
+              const tagColor = isInc ? theme.incomeColor : isSav ? theme.balanceColor : isGiv ? theme.primary : theme.expenseColor;
 
               return (
                 <View
@@ -646,8 +599,6 @@ export const FinanceScreen: React.FC = () => {
                       <Coins size={16} color={theme.balanceColor} />
                     ) : isGiv ? (
                       <Heart size={16} color={theme.primary} />
-                    ) : isDebt ? (
-                      <CreditCard size={16} color="#DC2626" />
                     ) : (
                       <ArrowUp size={16} color={theme.expenseColor} />
                     )}
@@ -662,7 +613,7 @@ export const FinanceScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.txRightCol}>
-                    <Text style={[styles.txAmount, { color: isInc ? theme.incomeColor : isSav ? theme.balanceColor : isDebt ? '#EF4444' : theme.text }]}>
+                    <Text style={[styles.txAmount, { color: isInc ? theme.incomeColor : isSav ? theme.balanceColor : theme.text }]}>
                       {isInc ? '+' : '-'}{currencySym}{tx.amount.toLocaleString()}
                     </Text>
                     <TouchableOpacity onPress={() => deleteTransaction(tx.id)} style={styles.deleteTxBtn}>
@@ -688,7 +639,6 @@ export const FinanceScreen: React.FC = () => {
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
         defaultType={modalDefaultType}
-        defaultCategory={modalDefaultCategory}
         defaultDate={`${selectedYearMonthStr}-01`}
       />
     </View>

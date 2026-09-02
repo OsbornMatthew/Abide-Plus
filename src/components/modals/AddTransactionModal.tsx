@@ -44,13 +44,13 @@ const INCOME_CATEGORIES: IncomeCategory[] = [
 ];
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  'Debt & Loans',
   'Housing & Rent',
   'Groceries & Food',
   'Transport & Fuel',
   'Utilities & Bills',
   'Healthcare & Meds',
   'Family & Kids',
+  'Debt & Loans',
   'Education',
   'Personal Care',
   'Leisure & Dining',
