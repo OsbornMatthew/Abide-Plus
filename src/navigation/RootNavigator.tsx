@@ -11,6 +11,7 @@ import { PrayerScreen } from '../screens/PrayerScreen';
 import { FinanceScreen } from '../screens/FinanceScreen';
 import { HabitsScreen } from '../screens/HabitsScreen';
 import { MoreScreen } from '../screens/MoreScreen';
+import { AuthScreen } from '../screens/AuthScreen';
 
 // Icons
 import {
@@ -25,7 +26,7 @@ import {
 const Tab = createBottomTabNavigator();
 
 export const RootNavigator: React.FC = () => {
-  const { theme, settings, habitStats, bibleProgress } = useApp();
+  const { theme, settings, habitStats, bibleProgress, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
   const navigationRef = useNavigationContainerRef();
   const currentRouteNameRef = useRef<string>('Home');
@@ -74,6 +75,11 @@ export const RootNavigator: React.FC = () => {
       backHandlerSubscription.remove();
     };
   }, []);
+
+  // Strict Authentication Gate: Show ONLY login/register screen when logged out
+  if (!user) {
+    return <AuthScreen isMandatory={true} />;
+  }
 
   return (
     <NavigationContainer

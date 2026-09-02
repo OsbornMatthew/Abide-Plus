@@ -22,9 +22,10 @@ import { spacing, borderRadius } from '../theme/spacing';
 interface AuthScreenProps {
   onSuccess?: () => void;
   onClose?: () => void;
+  isMandatory?: boolean;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMandatory }) => {
   const { theme, settings, loginUser, loginWithGoogle, savedUsers, switchUser, removeSavedUser, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
@@ -170,27 +171,29 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.container, { backgroundColor: theme.background }]}
     >
-      {/* Prominent Top Navigation Bar with Close Cross */}
-      <View style={[styles.topCloseBar, { borderBottomColor: theme.cardBorder }]}>
-        <Text style={[styles.topBarTitle, { color: theme.textMuted }]}>
-          {user ? (isTamil ? 'பயனர் கணக்கு' : 'User Profile') : (isTamil ? 'உள்நுழைக' : 'Sign In')}
-        </Text>
-        <TouchableOpacity
-          style={[styles.closePillBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
-          onPress={handleDismiss}
-          activeOpacity={0.7}
-        >
-          <X size={16} color={theme.text} />
-          <Text style={[styles.closePillText, { color: theme.text }]}>
-            {isTamil ? 'மூடு' : 'Close'}
+      {/* Top Bar */}
+      {!isMandatory && (
+        <View style={[styles.topCloseBar, { borderBottomColor: theme.cardBorder }]}>
+          <Text style={[styles.topBarTitle, { color: theme.textMuted }]}>
+            {user ? (isTamil ? 'பயனர் கணக்கு' : 'User Profile') : (isTamil ? 'உள்நுழைக' : 'Sign In')}
           </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.closePillBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+            onPress={handleDismiss}
+            activeOpacity={0.7}
+          >
+            <X size={16} color={theme.text} />
+            <Text style={[styles.closePillText, { color: theme.text }]}>
+              {isTamil ? 'மூடு' : 'Close'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, isMandatory && { paddingTop: Platform.OS === 'web' ? spacing.xl * 2 : spacing.hero }]} showsVerticalScrollIndicator={false}>
         {/* Abide+ Pure Text Header without Icon Box */}
         <View style={styles.logoHeader}>
-          <AbideLogo fontSize={38} />
+          <AbideLogo fontSize={42} />
           <Text style={[styles.tagline, { color: theme.textMuted }]}>
             {isTamil
               ? 'கிறிஸ்தவ ஆவிக்குரிய & காரியஸ்த தோழன்'
@@ -400,15 +403,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose }) =>
           </View>
         )}
 
-        {/* Bottom Back to Dashboard Button */}
-        <TouchableOpacity
-          style={[styles.bottomCloseBtn, { borderColor: theme.cardBorder, backgroundColor: theme.cardAlt }]}
-          onPress={handleDismiss}
-        >
-          <Text style={[styles.bottomCloseText, { color: theme.text }]}>
-            ← {isTamil ? 'முகப்புக்கு திரும்பு' : 'Back to Dashboard'}
-          </Text>
-        </TouchableOpacity>
+        {/* Bottom Back to Dashboard Button (only if not mandatory) */}
+        {!isMandatory && (
+          <TouchableOpacity
+            style={[styles.bottomCloseBtn, { borderColor: theme.cardBorder, backgroundColor: theme.cardAlt }]}
+            onPress={handleDismiss}
+          >
+            <Text style={[styles.bottomCloseText, { color: theme.text }]}>
+              ← {isTamil ? 'முகப்புக்கு திரும்பு' : 'Back to Dashboard'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
