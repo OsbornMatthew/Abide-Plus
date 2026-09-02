@@ -22,6 +22,8 @@ import { UserProfile } from '../types/auth';
 import { Habit, DEFAULT_HABITS } from '../types/habit';
 import { DecisionWheel, DecisionResult } from '../types/decision';
 import { DEFAULT_DECISION_WHEELS } from '../data/defaultWheels';
+import { ALL_BIBLE_BOOKS, getCleanBibleBooks } from '../data/bibleBooks';
+import { READING_PLANS, getCleanReadingPlans } from '../data/readingPlans';
 import { AppSettings, DEFAULT_SETTINGS, StorageService } from '../services/storage';
 import { AuthService } from '../services/authStorage';
 import { FirebaseSyncService, UserCloudData } from '../services/firebase';
@@ -261,8 +263,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setUser(activeUser);
         setSavedUsers(usersList);
         setSettings(loadedSettings);
-        setBibleBooks(loadedBooks);
-        setReadingPlans(loadedPlans);
+        setBibleBooks(loadedBooks || getCleanBibleBooks());
+        setReadingPlans(loadedPlans || getCleanReadingPlans());
 
         // Clean out default seed habits so users start with their own, and compute accurate streaks
         const defaultHabitIds = new Set([
@@ -510,16 +512,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setBibleBooks(cloud.bibleBooks);
           await StorageService.saveBibleBooks(cloud.bibleBooks);
         } else {
-          setBibleBooks(ALL_BIBLE_BOOKS);
-          await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
+          const cleanBooks = getCleanBibleBooks();
+          setBibleBooks(cleanBooks);
+          await StorageService.saveBibleBooks(cleanBooks);
         }
 
         if (cloud.readingPlans && Array.isArray(cloud.readingPlans)) {
           setReadingPlans(cloud.readingPlans);
           await StorageService.saveReadingPlans(cloud.readingPlans);
         } else {
-          setReadingPlans(READING_PLANS);
-          await StorageService.saveReadingPlans(READING_PLANS);
+          const cleanPlans = getCleanReadingPlans();
+          setReadingPlans(cleanPlans);
+          await StorageService.saveReadingPlans(cleanPlans);
         }
 
         if (cloud.habits && Array.isArray(cloud.habits)) {
@@ -569,6 +573,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       } else {
         // Clean slate for brand new user
+        const cleanBooks = getCleanBibleBooks();
+        const cleanPlans = getCleanReadingPlans();
+
         setPrayers([]);
         setTransactions([]);
         setHabits([]);
@@ -579,8 +586,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setMemoryVerses([]);
         setFastingRecords([]);
         setTodos(SEED_TODOS);
-        setBibleBooks(ALL_BIBLE_BOOKS);
-        setReadingPlans(READING_PLANS);
+        setBibleBooks(cleanBooks);
+        setReadingPlans(cleanPlans);
         setActiveWheelId('');
 
         await StorageService.savePrayers([]);
@@ -593,8 +600,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await StorageService.saveMemoryVerses([]);
         await StorageService.saveFastingRecords([]);
         await StorageService.saveTodos(SEED_TODOS);
-        await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
-        await StorageService.saveReadingPlans(READING_PLANS);
+        await StorageService.saveBibleBooks(cleanBooks);
+        await StorageService.saveReadingPlans(cleanPlans);
 
         if (targetUser?.id) {
           await FirebaseSyncService.syncUserData(targetUser.id, {
@@ -608,8 +615,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             memoryVerses: [],
             fastingRecords: [],
             todos: SEED_TODOS,
-            bibleBooks: ALL_BIBLE_BOOKS,
-            readingPlans: READING_PLANS,
+            bibleBooks: cleanBooks,
+            readingPlans: cleanPlans,
           });
         }
       }
@@ -749,6 +756,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
     if (!cloud) {
+      const cleanBooks = getCleanBibleBooks();
+      const cleanPlans = getCleanReadingPlans();
       // Initialize brand new user in cloud with clean data
       await FirebaseSyncService.syncUserData(loggedIn.id, {
         prayers: [],
@@ -761,8 +770,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         memoryVerses: [],
         fastingRecords: [],
         todos: SEED_TODOS,
-        bibleBooks: ALL_BIBLE_BOOKS,
-        readingPlans: READING_PLANS,
+        bibleBooks: cleanBooks,
+        readingPlans: cleanPlans,
       });
     }
   };
@@ -778,6 +787,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
     if (!cloud) {
+      const cleanBooks = getCleanBibleBooks();
+      const cleanPlans = getCleanReadingPlans();
       await FirebaseSyncService.syncUserData(loggedIn.id, {
         prayers: [],
         transactions: [],
@@ -789,8 +800,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         memoryVerses: [],
         fastingRecords: [],
         todos: SEED_TODOS,
-        bibleBooks: ALL_BIBLE_BOOKS,
-        readingPlans: READING_PLANS,
+        bibleBooks: cleanBooks,
+        readingPlans: cleanPlans,
       });
     }
   };
@@ -799,6 +810,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await AuthService.logout();
     await FirebaseSyncService.logout();
     setUser(null);
+    const cleanBooks = getCleanBibleBooks();
+    const cleanPlans = getCleanReadingPlans();
     setPrayers([]);
     setTransactions([]);
     setHabits([]);
@@ -809,8 +822,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setMemoryVerses([]);
     setFastingRecords([]);
     setTodos(SEED_TODOS);
-    setBibleBooks(ALL_BIBLE_BOOKS);
-    setReadingPlans(READING_PLANS);
+    setBibleBooks(cleanBooks);
+    setReadingPlans(cleanPlans);
     setActiveWheelId('');
     await StorageService.savePrayers([]);
     await StorageService.saveTransactions([]);
@@ -822,8 +835,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     await StorageService.saveMemoryVerses([]);
     await StorageService.saveFastingRecords([]);
     await StorageService.saveTodos(SEED_TODOS);
-    await StorageService.saveBibleBooks(ALL_BIBLE_BOOKS);
-    await StorageService.saveReadingPlans(READING_PLANS);
+    await StorageService.saveBibleBooks(cleanBooks);
+    await StorageService.saveReadingPlans(cleanPlans);
   };
 
   const switchUser = async (targetUser: UserProfile) => {

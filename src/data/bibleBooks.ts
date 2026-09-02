@@ -71,3 +71,10 @@ export const ALL_BIBLE_BOOKS: BibleBook[] = [
   { id: 'JUD', order: 65, nameEn: 'Jude', nameTa: 'யூதா', shortEn: 'Jud', shortTa: 'யூதா', testament: 'NT', totalChapters: 1, readChapters: [] },
   { id: 'REV', order: 66, nameEn: 'Revelation', nameTa: 'வெளிப்படுத்தின விசேஷம்', shortEn: 'Rev', shortTa: 'வெளி', testament: 'NT', totalChapters: 22, readChapters: [] },
 ];
+
+export const getCleanBibleBooks = (): BibleBook[] => {
+  return ALL_BIBLE_BOOKS.map((b) => ({
+    ...b,
+    readChapters: [],
+  }));
+};

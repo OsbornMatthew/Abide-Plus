@@ -9,7 +9,7 @@ export const READING_PLANS: ReadingPlan[] = [
     descriptionTa: 'இயேசு கிறிஸ்துவின் அன்பையும், அற்புதங்களையும், தெய்வீகத்தையும் யோவான் நற்செய்தி வழியே அறிந்து கொள்ளுங்கள்.',
     daysTotal: 21,
     currentDay: 1,
-    completedDays: [1],
+    completedDays: [],
     category: 'Gospels',
     dailyReadings: [
       { day: 1, passageEn: 'John 1:1-51', passageTa: 'யோவான் 1:1-51', focusVerseEn: 'John 1:14', focusVerseTa: 'யோவான் 1:14' },
@@ -72,3 +72,10 @@ export const READING_PLANS: ReadingPlan[] = [
     ],
   },
 ];
+
+export const getCleanReadingPlans = (): ReadingPlan[] => {
+  return READING_PLANS.map((p) => ({
+    ...p,
+    completedDays: [],
+  }));
+};
