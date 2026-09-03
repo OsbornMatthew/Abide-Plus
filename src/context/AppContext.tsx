@@ -289,8 +289,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             };
           });
         setHabits(userHabits);
-        await StorageService.saveHabits(userHabits);
-        syncUserCloud({ habits: userHabits });
 
         // Clean out default seed wheels so users start with their own
         const defaultWheelIds = new Set([
@@ -306,8 +304,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } else {
           setActiveWheelId('');
         }
-        await StorageService.saveDecisionWheels(userWheels);
-        syncUserCloud({ decisionWheels: userWheels } as any);
         setDecisionResults(loadedResults || []);
 
         // Filter out any old pre-loaded seed notes so user starts with a completely clean slate
@@ -382,7 +378,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         const finalTodos = toPrepend.length > 0 ? [...toPrepend, ...cleanTodos] : cleanTodos;
         setTodos(finalTodos);
-        await StorageService.saveTodos(finalTodos);
 
         setSermons(loadedSermons);
         setMemoryVerses(loadedMemoryVerses);
@@ -420,10 +415,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lastLoginAt: new Date().toISOString(),
         };
         setUser(active);
-        await AuthService.setActiveUser(active);
-        await AuthService.saveUserToSavedList(active);
-        const cloud = await FirebaseSyncService.loadUserData(active.id);
-        await applyUserData(cloud, active);
+        AuthService.setActiveUser(active);
+        AuthService.saveUserToSavedList(active);
       }
     });
 
