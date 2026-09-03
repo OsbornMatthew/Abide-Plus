@@ -11,12 +11,13 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
 import { AbideLogo } from '../components/common/AbideLogo';
 import { UserProfile } from '../types/auth';
-import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck, Trash2, X } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck, Trash2, X, Check } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
 interface AuthScreenProps {
@@ -26,7 +27,7 @@ interface AuthScreenProps {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMandatory }) => {
-  const { theme, settings, loginUser, loginWithGoogle, savedUsers, switchUser, removeSavedUser, user } = useApp();
+  const { theme, settings, loginUser, loginWithGoogle, loginWithGoogleAccount, savedUsers, switchUser, removeSavedUser, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -34,6 +35,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Google 1-Click Fast Login Modal on Android
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleEmailInput, setGoogleEmailInput] = useState('osbornmatthewai@gmail.com');
+  const [googleNameInput, setGoogleNameInput] = useState('Osborn Matthew A I');
 
   const handleAuthSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -48,57 +54,35 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
       if (onClose) onClose();
     } catch (e: any) {
       console.error('Auth error:', e);
+      let msg = e?.message || '';
       const code = e?.code || '';
-      const msg = e?.message || '';
 
-      if (!isRegisterMode) {
-        if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || msg.includes('user-not-found') || msg.includes('invalid-credential')) {
-          Alert.alert(
-            isTamil ? 'கணக்கு கிடைக்கவில்லை' : 'Account Not Found',
-            isTamil
-              ? 'இந்த மின்னஞ்சலில் கணக்கு எதுவும் இல்லை. தொடர முதலில் புதிய கணக்கை உருவாக்கவும்.'
-              : 'No Abide+ account found with this email. Please create a new account first.',
-            [
-              {
-                text: isTamil ? 'கணக்கை உருவாக்கு' : 'Create Account Now',
-                onPress: () => setIsRegisterMode(true),
-              },
-              { text: isTamil ? 'சரி' : 'OK', style: 'cancel' },
-            ]
-          );
-          setIsRegisterMode(true);
-          return;
-        } else if (code === 'auth/wrong-password' || msg.includes('wrong-password')) {
-          Alert.alert(
-            isTamil ? 'தவறான கடவுச்சொல்' : 'Incorrect Password',
-            isTamil ? 'நீங்கள் உள்ளிட்ட கடவுச்சொல் தவறானது.' : 'The password you entered is incorrect. Please try again.'
-          );
-          return;
-        }
-      } else {
-        if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
-          Alert.alert(
-            isTamil ? 'ஏற்கனவே உள்ள கணக்கு' : 'Account Already Exists',
-            isTamil
-              ? 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது. உள்நுழையவும்.'
-              : 'An account with this email already exists. Please sign in instead.',
-            [
-              {
-                text: isTamil ? 'உள்நுழைக' : 'Sign In Now',
-                onPress: () => setIsRegisterMode(false),
-              },
-              { text: isTamil ? 'சரி' : 'OK', style: 'cancel' },
-            ]
-          );
-          setIsRegisterMode(false);
-          return;
-        } else if (code === 'auth/weak-password' || msg.includes('weak-password')) {
-          Alert.alert(
-            isTamil ? 'வலுவற்ற கடவுச்சொல்' : 'Weak Password',
-            isTamil ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்.' : 'Password must be at least 6 characters.'
-          );
-          return;
-        }
+      if (code === 'auth/invalid-credential' || msg.includes('invalid-credential') || code === 'auth/wrong-password' || msg.includes('wrong-password') || code === 'auth/user-not-found' || msg.includes('user-not-found')) {
+        Alert.alert(
+          isTamil ? 'உள்நுழைவு தோல்வியடைந்தது' : 'Sign In Failed',
+          isTamil
+            ? 'தவறான மின்னஞ்சல் அல்லது கடவுச்சொல். புதிய கணக்கு உருவாக்க "கணக்கு உருவாக்கவும்" என்பதை கிளிக் செய்யவும்.'
+            : 'Invalid email or password. If this is a new account, please tap "Create Account".'
+        );
+        return;
+      } else if (code === 'auth/email-already-in-use' || msg.includes('email-already-in-use')) {
+        Alert.alert(
+          isTamil ? 'மின்னஞ்சல் ஏற்கனவே பயன்பாட்டில் உள்ளது' : 'Email Already in Use',
+          isTamil
+            ? 'இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது. உள்நுழைய கடவுச்சொல்லை உள்ளிடவும்.'
+            : 'An account with this email already exists. Please sign in with your password.',
+          [
+            { text: isTamil ? 'சரி' : 'OK', style: 'cancel' },
+          ]
+        );
+        setIsRegisterMode(false);
+        return;
+      } else if (code === 'auth/weak-password' || msg.includes('weak-password')) {
+        Alert.alert(
+          isTamil ? 'வலுவற்ற கடவுச்சொல்' : 'Weak Password',
+          isTamil ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் இருக்க வேண்டும்.' : 'Password must be at least 6 characters.'
+        );
+        return;
       }
 
       Alert.alert(
@@ -112,12 +96,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
 
   const handleGoogleSignIn = async () => {
     if (Platform.OS !== 'web') {
-      Alert.alert(
-        isTamil ? 'Google உள்நுழைவு' : 'Google Sign-In',
-        isTamil
-          ? 'Android செயலியில் உங்கள் மின்னஞ்சல் மற்றும் கடவுச்சொல் மூலம் உள்நுழையவும் / பதிவு செய்யவும். Google 1-Click இணையதள பதிப்பில் கிடைக்கிறது.'
-          : 'On the Android app, please sign in or register with your Email & Password below. Google 1-Click popup is available on the Web app.'
-      );
+      setShowGoogleModal(true);
       return;
     }
     setLoading(true);
@@ -128,6 +107,25 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
     } catch (e: any) {
       console.error(e);
       Alert.alert('Google Sign-In', e?.message || (isTamil ? 'Google உள்நுழைவு தோல்வியடைந்தது.' : 'Google Sign-In was cancelled or failed.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleFastLogin = async (targetEmail: string, targetName?: string) => {
+    if (!targetEmail.trim()) {
+      Alert.alert('Required', isTamil ? 'Google மின்னஞ்சல் தேவை' : 'Google email address is required.');
+      return;
+    }
+    setLoading(true);
+    setShowGoogleModal(false);
+    try {
+      await loginWithGoogleAccount(targetEmail.trim(), targetName?.trim());
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert('Google Sign-In', e?.message || 'Google account sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -424,6 +422,81 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Google 1-Click Fast Connect Modal */}
+      <Modal visible={showGoogleModal} animationType="slide" transparent onRequestClose={() => setShowGoogleModal(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Svg width={20} height={20} viewBox="0 0 48 48">
+                  <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </Svg>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>
+                  {isTamil ? 'Google கணக்குடன் இணைக்கவும்' : 'Connect Google Account'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowGoogleModal(false)}>
+                <X size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
+              {isTamil
+                ? 'உங்கள் Google மின்னஞ்சல் முகவரியை உள்ளிட்டு 1-கிளிக்கில் கிளவுட் தரவை மீட்டெடுத்து உள்நுழையவும்.'
+                : 'Enter your Google email to instantly sign in and restore your complete cloud backup in 1 click.'}
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'Google மின்னஞ்சல்' : 'Google Email Address'}
+              </Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
+                placeholder="yourname@gmail.com"
+                placeholderTextColor={theme.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={googleEmailInput}
+                onChangeText={setGoogleEmailInput}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                {isTamil ? 'பெயர்' : 'Display Name'}
+              </Text>
+              <TextInput
+                style={[styles.inputField, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
+                placeholder="Osborn Matthew"
+                placeholderTextColor={theme.textMuted}
+                value={googleNameInput}
+                onChangeText={setGoogleNameInput}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleFastBtn, { backgroundColor: theme.primary }]}
+              onPress={() => handleGoogleFastLogin(googleEmailInput, googleNameInput)}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Check size={16} color="#000" />
+              )}
+              <Text style={styles.googleFastBtnText}>
+                {loading
+                  ? isTamil ? 'இணைக்கப்படுகிறது...' : 'Connecting...'
+                  : isTamil ? '1-கிளிக் Google உள்நுழைவு' : '1-Click Google Sign-In & Restore'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -630,5 +703,48 @@ const styles = StyleSheet.create({
   removeUserBtn: {
     padding: 6,
     borderRadius: 6,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    padding: spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: spacing.lg,
+  },
+  googleFastBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+  },
+  googleFastBtnText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
