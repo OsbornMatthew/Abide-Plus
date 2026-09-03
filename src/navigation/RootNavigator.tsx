@@ -99,6 +99,7 @@ export const RootNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
           lazy: false,
+          freezeOnBlur: true,
           tabBarHideOnKeyboard: true,
           tabBarStyle: {
             backgroundColor: theme.tabBar,

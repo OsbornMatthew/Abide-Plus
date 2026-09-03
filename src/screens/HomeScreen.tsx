@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -73,19 +73,19 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedHabitForHistory, setSelectedHabitForHistory] = useState<Habit | null>(null);
   const [showHabitHistoryModal, setShowHabitHistoryModal] = useState(false);
 
-  const publicHabits = habits.filter((h) => !h.isPrivate);
+  const publicHabits = useMemo(() => habits.filter((h) => !h.isPrivate), [habits]);
 
   // Automatic current date
-  const todayFormatted = new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', {
+  const todayFormatted = useMemo(() => new Date().toLocaleDateString(isTamil ? 'ta-IN' : 'en-US', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-  });
+  }), [isTamil]);
 
   const todayStr = getLocalDateString();
-  const todayTodos = todos.filter(
+  const todayTodos = useMemo(() => todos.filter(
     (t) => !t.dueDate || t.dueDate === todayStr || t.isDailyRoutine
-  );
+  ), [todos, todayStr]);
 
   const openFinanceModal = (tType: TransactionType) => {
     setTransactionModalType(tType);

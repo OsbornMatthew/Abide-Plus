@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -83,31 +83,35 @@ export const BibleScreen: React.FC = () => {
     setShowGlobalNoteModal(true);
   };
 
-  // Filter books
-  const filteredBooks = bibleBooks.filter((b) => {
-    if (activeTab === 'OT' && b.testament !== 'OT') return false;
-    if (activeTab === 'NT' && b.testament !== 'NT') return false;
+  // Filter books (memoized for maximum performance)
+  const filteredBooks = useMemo(() => {
+    return bibleBooks.filter((b) => {
+      if (activeTab === 'OT' && b.testament !== 'OT') return false;
+      if (activeTab === 'NT' && b.testament !== 'NT') return false;
 
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      b.nameEn.toLowerCase().includes(q) ||
-      b.nameTa.toLowerCase().includes(q) ||
-      b.shortEn.toLowerCase().includes(q) ||
-      b.shortTa.toLowerCase().includes(q)
-    );
-  });
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        b.nameEn.toLowerCase().includes(q) ||
+        b.nameTa.toLowerCase().includes(q) ||
+        b.shortEn.toLowerCase().includes(q) ||
+        b.shortTa.toLowerCase().includes(q)
+      );
+    });
+  }, [bibleBooks, activeTab, searchQuery]);
 
-  const filteredNotes = verseNotes.filter((n) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      n.verseRefEn.toLowerCase().includes(q) ||
-      (n.verseRefTa && n.verseRefTa.toLowerCase().includes(q)) ||
-      (n.verseText && n.verseText.toLowerCase().includes(q)) ||
-      n.noteText.toLowerCase().includes(q)
-    );
-  });
+  const filteredNotes = useMemo(() => {
+    return verseNotes.filter((n) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        n.verseRefEn.toLowerCase().includes(q) ||
+        (n.verseRefTa && n.verseRefTa.toLowerCase().includes(q)) ||
+        (n.verseText && n.verseText.toLowerCase().includes(q)) ||
+        n.noteText.toLowerCase().includes(q)
+      );
+    });
+  }, [verseNotes, searchQuery]);
 
   const openBookReader = (book: BibleBook, chapter: number = 1) => {
     setSelectedBook(book);
