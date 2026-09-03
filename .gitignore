@@ -33,6 +33,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# APK & Binaries
+*.apk
+
 # System
 .system_generated/
 scratch/

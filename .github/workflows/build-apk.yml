@@ -62,22 +62,17 @@ jobs:
           find node_modules/react-native/sdks/hermesc/ -type f -exec chmod +x {} + 2>/dev/null || true
           chmod -R 777 node_modules/react-native/sdks/hermesc/ || true
 
-      - name: Compile Standalone Android APK
+      - name: Compile Standalone Android Release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon -x lint --stacktrace 2>&1 | tee ../gradle_release.log || ./gradlew assembleDebug --no-daemon -x lint --stacktrace 2>&1 | tee ../gradle_debug.log || true
+          ./gradlew assembleRelease --no-daemon -x lint --stacktrace
           cd ..
-          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
+          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" 2>/dev/null | head -n 1)
+          fi
           if [ -z "$APK_FILE" ]; then
             echo "::error::No APK file generated in android/app/build/outputs/apk"
-            echo "### ❌ Release Build Log (Last 100 lines)" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 100 gradle_release.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "### ❌ Debug Build Log (Last 100 lines)" >> $GITHUB_STEP_SUMMARY
-            echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 100 gradle_debug.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
-            echo '```' >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           echo "Found APK at: $APK_FILE"
