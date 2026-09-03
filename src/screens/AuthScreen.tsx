@@ -474,14 +474,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.hero,
+    paddingBottom: spacing.xl,
     alignItems: 'center',
   },
   logoHeader: {
     alignItems: 'center',
     marginBottom: spacing.xl,
+    width: '100%',
+    maxWidth: 420,
   },
   tagline: {
     fontSize: 12,
@@ -490,7 +494,8 @@ const styles = StyleSheet.create({
   },
   authCard: {
     width: '100%',
-    padding: spacing.lg,
+    maxWidth: 420,
+    padding: spacing.xl,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     marginBottom: spacing.lg,
