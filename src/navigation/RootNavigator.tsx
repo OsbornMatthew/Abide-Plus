@@ -95,8 +95,11 @@ export const RootNavigator: React.FC = () => {
       }}
     >
       <Tab.Navigator
+        detachInactiveScreens={false}
         screenOptions={{
           headerShown: false,
+          lazy: false,
+          tabBarHideOnKeyboard: true,
           tabBarStyle: {
             backgroundColor: theme.tabBar,
             borderTopColor: 'transparent',

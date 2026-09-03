@@ -113,7 +113,12 @@ export const FirebaseSyncService = {
       const userDocRef = doc(db, "users", cleanUserId);
       return onSnapshot(
         userDocRef,
+        { includeMetadataChanges: true },
         (snapshot) => {
+          // Ignore local pending writes to avoid cascading re-renders on local user actions
+          if (snapshot.metadata.hasPendingWrites) {
+            return;
+          }
           if (snapshot.exists()) {
             onUpdate(snapshot.data() as UserCloudData);
           }

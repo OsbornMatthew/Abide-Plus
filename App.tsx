@@ -1,11 +1,14 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, StatusBar, ActivityIndicator, Platform } from 'react-native';
+import { enableScreens } from 'react-native-screens';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/context/AppContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { AbideLogo } from './src/components/common/AbideLogo';
 import { ErrorBoundary } from './src/components/common/ErrorBoundary';
+
+enableScreens(true);
 
 // Inject modern Google Fonts on Web (Mukta Malar for Tamil, Plus Jakarta Sans for UI)
 if (Platform.OS === 'web' && typeof document !== 'undefined') {

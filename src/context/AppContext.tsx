@@ -52,8 +52,8 @@ interface AppContextType {
 
   // Scripture & Bible
   bibleBooks: BibleBook[];
-  toggleChapterRead: (bookId: string, chapter: number) => Promise<void>;
-  markAllChaptersRead: (bookId: string, markRead: boolean) => Promise<void>;
+  toggleChapterRead: (bookId: string, chapter: number) => void;
+  markAllChaptersRead: (bookId: string, markRead: boolean) => void;
   bibleProgress: {
     totalChapters: number;
     readChaptersCount: number;
@@ -62,7 +62,7 @@ interface AppContextType {
     ntPercentage: number;
   };
   readingPlans: ReadingPlan[];
-  togglePlanDay: (planId: string, day: number) => Promise<void>;
+  togglePlanDay: (planId: string, day: number) => void;
   dailyVerse: VerseOfTheDay;
   setDailyVerseIndex: (idx: number) => void;
   activeVerseIndex: number;
@@ -104,9 +104,9 @@ interface AppContextType {
   todos: TodoTask[];
   addTodo: (todo: Omit<TodoTask, 'id' | 'createdAt'>) => Promise<void>;
   updateTodo: (id: string, updates: Partial<TodoTask>) => Promise<void>;
-  toggleTodo: (id: string) => Promise<void>;
-  deleteTodo: (id: string) => Promise<void>;
-  toggleSubtask: (todoId: string, subtaskId: string) => Promise<void>;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+  toggleSubtask: (todoId: string, subtaskId: string) => void;
   dailyTaskStats: {
     totalToday: number;
     completedToday: number;
@@ -134,7 +134,7 @@ interface AppContextType {
 
   // Habit Tracker & Daily Disciplines
   habits: Habit[];
-  toggleHabit: (id: string, dateStr?: string) => Promise<void>;
+  toggleHabit: (id: string, dateStr?: string) => void;
   addHabit: (habit: Omit<Habit, 'id' | 'completedDates' | 'currentStreak' | 'bestStreak' | 'createdAt'>) => Promise<void>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
@@ -829,7 +829,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [bibleBooks]);
 
-  const toggleChapterRead = async (bookId: string, chapter: number) => {
+  const toggleChapterRead = (bookId: string, chapter: number) => {
     const updated = bibleBooks.map((book) => {
       if (book.id === bookId) {
         const readSet = new Set(book.readChapters || []);
@@ -843,11 +843,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return book;
     });
     setBibleBooks(updated);
-    await StorageService.saveBibleBooks(updated, user?.id);
+    StorageService.saveBibleBooks(updated, user?.id);
     syncUserCloud({ bibleBooks: updated });
   };
 
-  const markAllChaptersRead = async (bookId: string, markRead: boolean) => {
+  const markAllChaptersRead = (bookId: string, markRead: boolean) => {
     const updated = bibleBooks.map((book) => {
       if (book.id === bookId) {
         return {
@@ -858,11 +858,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return book;
     });
     setBibleBooks(updated);
-    await StorageService.saveBibleBooks(updated, user?.id);
+    StorageService.saveBibleBooks(updated, user?.id);
     syncUserCloud({ bibleBooks: updated });
   };
 
-  const togglePlanDay = async (planId: string, day: number) => {
+  const togglePlanDay = (planId: string, day: number) => {
     const updated = readingPlans.map((plan) => {
       if (plan.id === planId) {
         const completedSet = new Set(plan.completedDays || []);
@@ -877,7 +877,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return plan;
     });
     setReadingPlans(updated);
-    await StorageService.saveReadingPlans(updated, user?.id);
+    StorageService.saveReadingPlans(updated, user?.id);
     syncUserCloud({ readingPlans: updated });
   };
 
@@ -1054,7 +1054,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ todos: updated });
   };
 
-  const toggleTodo = async (id: string) => {
+  const toggleTodo = (id: string) => {
     const updated = todos.map((t) => {
       if (t.id === id) {
         const nextState = !t.isCompleted;
@@ -1067,18 +1067,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return t;
     });
     setTodos(updated);
-    await StorageService.saveTodos(updated, user?.id);
+    StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
-  const deleteTodo = async (id: string) => {
+  const deleteTodo = (id: string) => {
     const updated = todos.filter((t) => t.id !== id);
     setTodos(updated);
-    await StorageService.saveTodos(updated, user?.id);
+    StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
-  const toggleSubtask = async (todoId: string, subtaskId: string) => {
+  const toggleSubtask = (todoId: string, subtaskId: string) => {
     const updated = todos.map((t) => {
       if (t.id === todoId) {
         const updatedSubs = t.subTasks.map((s) =>
@@ -1095,7 +1095,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return t;
     });
     setTodos(updated);
-    await StorageService.saveTodos(updated, user?.id);
+    StorageService.saveTodos(updated, user?.id);
     syncUserCloud({ todos: updated });
   };
 
@@ -1220,7 +1220,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncUserCloud({ fastingRecords: updated });
   };
 
-  const toggleHabit = async (id: string, dateStr?: string) => {
+  const toggleHabit = (id: string, dateStr?: string) => {
     const todayStr = getLocalDateString();
     // Enforce discipline integrity: Only allow marking/unmarking today's habit
     const targetDate = dateStr && dateStr !== todayStr ? todayStr : (dateStr || todayStr);
@@ -1245,7 +1245,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return h;
     });
     setHabits(updated);
-    await StorageService.saveHabits(updated, user?.id);
+    StorageService.saveHabits(updated, user?.id);
     syncUserCloud({ habits: updated });
   };
 
