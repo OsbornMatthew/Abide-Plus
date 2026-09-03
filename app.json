@@ -12,10 +12,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": false
     },
     "android": {
+      "jsEngine": "hermes",
       "package": "com.abideplus.christianlifetracker",
       "versionCode": 1,
       "adaptiveIcon": {

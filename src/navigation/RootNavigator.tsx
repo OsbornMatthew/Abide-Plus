@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Platform, BackHandler } from 'react-native';
+import { StyleSheet, View, Text, Platform, BackHandler, Pressable } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
@@ -101,6 +101,19 @@ export const RootNavigator: React.FC = () => {
           lazy: true,
           freezeOnBlur: true,
           tabBarHideOnKeyboard: true,
+          tabBarButton: (props: any) => {
+            const { ref, ...rest } = props;
+            return (
+              <Pressable
+                {...rest}
+                android_ripple={null}
+                style={({ pressed }) => [
+                  props.style,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              />
+            );
+          },
           tabBarStyle: {
             backgroundColor: theme.tabBar,
             borderTopColor: 'transparent',

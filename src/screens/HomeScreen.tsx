@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Share,
+  Platform,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
@@ -118,7 +119,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = React.memo(({ navigatio
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody} removeClippedSubviews={Platform.OS === 'android'}>
         {/* ACTIVE LIVE PRAYER TIMER BANNER */}
         {(prayerTimer.isRunning || (prayerTimer.secondsLeft < prayerTimer.totalSeconds && prayerTimer.secondsLeft > 0)) && (
           <TouchableOpacity
@@ -530,6 +531,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = React.memo(({ navigatio
                     ]}
                     onPress={() => toggleHabit(h.id)}
                     activeOpacity={0.7}
+                    delayPressIn={0}
                   >
                     {isDone && <Check size={12} color="#FFF" />}
                   </TouchableOpacity>
@@ -599,6 +601,8 @@ export const HomeScreen: React.FC<{ navigation: any }> = React.memo(({ navigatio
                 key={todo.id}
                 style={[styles.taskRow, { borderBottomColor: theme.cardBorder }]}
                 onPress={() => toggleTodo(todo.id)}
+                delayPressIn={0}
+                activeOpacity={0.7}
               >
                 <View
                   style={[
