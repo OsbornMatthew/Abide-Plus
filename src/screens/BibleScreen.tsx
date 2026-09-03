@@ -29,7 +29,7 @@ import {
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
-export const BibleScreen: React.FC = () => {
+export const BibleScreen: React.FC = React.memo(() => {
   const {
     theme,
     settings,
@@ -751,7 +751,7 @@ export const BibleScreen: React.FC = () => {
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

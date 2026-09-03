@@ -49,7 +49,7 @@ import {
 import { spacing, borderRadius } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
-export const MoreScreen: React.FC = () => {
+export const MoreScreen: React.FC = React.memo(() => {
   const {
     theme,
     settings,
@@ -1272,7 +1272,7 @@ export const MoreScreen: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

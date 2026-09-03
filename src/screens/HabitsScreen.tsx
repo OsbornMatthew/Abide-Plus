@@ -5,7 +5,7 @@ import { Header } from '../components/common/Header';
 import { HabitTrackerSection } from '../components/habits/HabitTrackerSection';
 import { spacing } from '../theme/spacing';
 
-export const HabitsScreen: React.FC = () => {
+export const HabitsScreen: React.FC = React.memo(() => {
   const { theme, settings } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
@@ -27,7 +27,7 @@ export const HabitsScreen: React.FC = () => {
       </ScrollView>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

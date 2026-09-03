@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ import {
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
-export const PrayerScreen: React.FC = () => {
+export const PrayerScreen: React.FC = React.memo(() => {
   const {
     theme,
     settings,
@@ -55,16 +55,18 @@ export const PrayerScreen: React.FC = () => {
   const [answeringPrayerId, setAnsweringPrayerId] = useState<string | null>(null);
   const [testimonyText, setTestimonyText] = useState('');
 
-  const filteredPrayers = prayers.filter((p) => {
-    if (activeTab !== 'all' && p.status !== activeTab) return false;
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      p.title.toLowerCase().includes(q) ||
-      p.details?.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q)
-    );
-  });
+  const filteredPrayers = useMemo(() => {
+    return prayers.filter((p) => {
+      if (activeTab !== 'all' && p.status !== activeTab) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        p.details?.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    });
+  }, [prayers, activeTab, searchQuery]);
 
   const handleOpenAnswerModal = (prayerId: string) => {
     setAnsweringPrayerId(prayerId);
@@ -426,7 +428,7 @@ export const PrayerScreen: React.FC = () => {
       <ThousandPraisesModal visible={showThousandPraisesModal} onClose={() => setShowThousandPraisesModal(false)} />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

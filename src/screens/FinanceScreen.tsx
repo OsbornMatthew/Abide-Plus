@@ -28,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
-export const FinanceScreen: React.FC = () => {
+export const FinanceScreen: React.FC = React.memo(() => {
   const { theme, settings, transactions, deleteTransaction } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
   const currencySym = settings.currency.symbol;
@@ -643,7 +643,7 @@ export const FinanceScreen: React.FC = () => {
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

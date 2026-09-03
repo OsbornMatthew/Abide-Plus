@@ -40,7 +40,7 @@ import { spacing, borderRadius } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { getLocalDateString } from '../utils/dateUtils';
 
-export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+export const HomeScreen: React.FC<{ navigation: any }> = React.memo(({ navigation }) => {
   const {
     theme,
     settings,
@@ -752,7 +752,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
