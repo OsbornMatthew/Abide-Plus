@@ -468,17 +468,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     ]);
 
     if (cloud) {
-      // Prayers
       const prayersToSet = cloud.prayers && Array.isArray(cloud.prayers) ? cloud.prayers : (localPrayers || []);
-      setPrayers(prayersToSet);
-      await StorageService.savePrayers(prayersToSet, targetUid);
-
-      // Transactions
       const txsToSet = cloud.transactions && Array.isArray(cloud.transactions) ? cloud.transactions : (localTxs || []);
-      setTransactions(txsToSet);
-      await StorageService.saveTransactions(txsToSet, targetUid);
-
-      // Todos
       const todosSource = cloud.todos && Array.isArray(cloud.todos) && cloud.todos.length > 0 ? cloud.todos : (localTodos && localTodos.length > 0 ? localTodos : SEED_TODOS);
       const todayStr = getLocalDateString();
       const refreshedTodos = todosSource.map((t: any) => {
@@ -495,44 +486,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         return t;
       });
-      setTodos(refreshedTodos);
-      await StorageService.saveTodos(refreshedTodos, targetUid);
-
-      // Verse Notes
       const notesToSet = cloud.verseNotes && Array.isArray(cloud.verseNotes) ? cloud.verseNotes : (localNotes || []);
-      setVerseNotes(notesToSet);
-      await StorageService.saveVerseNotes(notesToSet, targetUid);
-
-      // Sermons
       const sermonsToSet = cloud.sermons && Array.isArray(cloud.sermons) ? cloud.sermons : (localSermons || []);
-      setSermons(sermonsToSet);
-      await StorageService.saveSermons(sermonsToSet, targetUid);
-
-      // Memory Verses
       const versesToSet = cloud.memoryVerses && Array.isArray(cloud.memoryVerses) ? cloud.memoryVerses : (localVerses || []);
-      setMemoryVerses(versesToSet);
-      await StorageService.saveMemoryVerses(versesToSet, targetUid);
-
-      // Fasting
       const fastsToSet = cloud.fastingRecords && Array.isArray(cloud.fastingRecords) ? cloud.fastingRecords : (localFasts || []);
-      setFastingRecords(fastsToSet);
-      await StorageService.saveFastingRecords(fastsToSet, targetUid);
-
-      // Bible Books
       const booksToSet = cloud.bibleBooks && Array.isArray(cloud.bibleBooks) && cloud.bibleBooks.length > 0
         ? cloud.bibleBooks
         : (localBooks && localBooks.length > 0 ? localBooks : getCleanBibleBooks());
-      setBibleBooks(booksToSet);
-      await StorageService.saveBibleBooks(booksToSet, targetUid);
-
-      // Reading Plans
       const plansToSet = cloud.readingPlans && Array.isArray(cloud.readingPlans) && cloud.readingPlans.length > 0
         ? cloud.readingPlans
         : (localPlans && localPlans.length > 0 ? localPlans : getCleanReadingPlans());
-      setReadingPlans(plansToSet);
-      await StorageService.saveReadingPlans(plansToSet, targetUid);
-
-      // Habits
       const habitsSource = cloud.habits && Array.isArray(cloud.habits) ? cloud.habits : (localHabits || []);
       const sanitizedHabits = habitsSource.map((h: any) => {
         const allDates = Array.from(new Set((h.completedDates || []) as string[])).sort();
@@ -545,25 +508,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           bestStreak: best,
         };
       });
-      setHabits(sanitizedHabits);
-      await StorageService.saveHabits(sanitizedHabits, targetUid);
-
-      // Decision Wheels
       const wheelsToSet = cloud.decisionWheels && Array.isArray(cloud.decisionWheels) ? cloud.decisionWheels : (localWheels || []);
-      setDecisionWheels(wheelsToSet);
-      await StorageService.saveDecisionWheels(wheelsToSet, targetUid);
-      setActiveWheelId(wheelsToSet.length > 0 ? wheelsToSet[0].id : '');
-
-      // Decision Results
       const resultsToSet = cloud.decisionResults && Array.isArray(cloud.decisionResults) ? cloud.decisionResults : (localResults || []);
-      setDecisionResults(resultsToSet);
-      await StorageService.saveDecisionResults(resultsToSet, targetUid);
 
-      // Settings
+      // Synchronous instant in-memory state update
+      setPrayers(prayersToSet);
+      setTransactions(txsToSet);
+      setTodos(refreshedTodos);
+      setVerseNotes(notesToSet);
+      setSermons(sermonsToSet);
+      setMemoryVerses(versesToSet);
+      setFastingRecords(fastsToSet);
+      setBibleBooks(booksToSet);
+      setReadingPlans(plansToSet);
+      setHabits(sanitizedHabits);
+      setDecisionWheels(wheelsToSet);
+      setActiveWheelId(wheelsToSet.length > 0 ? wheelsToSet[0].id : '');
+      setDecisionResults(resultsToSet);
+
       if (cloud.settings && typeof cloud.settings === 'object') {
         setSettings((prev) => ({ ...prev, ...cloud.settings }));
-        await StorageService.saveSettings(cloud.settings);
       }
+
+      // Non-blocking parallel storage write in background
+      Promise.all([
+        StorageService.savePrayers(prayersToSet, targetUid),
+        StorageService.saveTransactions(txsToSet, targetUid),
+        StorageService.saveTodos(refreshedTodos, targetUid),
+        StorageService.saveVerseNotes(notesToSet, targetUid),
+        StorageService.saveSermons(sermonsToSet, targetUid),
+        StorageService.saveMemoryVerses(versesToSet, targetUid),
+        StorageService.saveFastingRecords(fastsToSet, targetUid),
+        StorageService.saveBibleBooks(booksToSet, targetUid),
+        StorageService.saveReadingPlans(plansToSet, targetUid),
+        StorageService.saveHabits(sanitizedHabits, targetUid),
+        StorageService.saveDecisionWheels(wheelsToSet, targetUid),
+        StorageService.saveDecisionResults(resultsToSet, targetUid),
+        cloud.settings ? StorageService.saveSettings(cloud.settings) : Promise.resolve(),
+      ]).catch((e) => console.warn('Background cache notice:', e));
     } else {
       // Cloud is null (e.g. initial web load or offline) - Use local storage data if present!
       const hasLocalData =
@@ -633,110 +615,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (!user?.id) return;
 
-    // Load initial cloud data on login
-    FirebaseSyncService.loadUserData(user.id).then((cloud) => {
+    let isMounted = true;
+    const unsubscribe = FirebaseSyncService.subscribeToUserData(user.id, (cloud) => {
+      if (!cloud || !isMounted) return;
       applyUserData(cloud, user);
     });
 
-    // Subscribe to realtime changes across devices
-    const unsubscribe = FirebaseSyncService.subscribeToUserData(user.id, (cloud) => {
-      if (!cloud) return;
-      const currentUid = user.id;
-      if (cloud.prayers && Array.isArray(cloud.prayers)) {
-        setPrayers(cloud.prayers);
-        StorageService.savePrayers(cloud.prayers, currentUid);
-      }
-      if (cloud.transactions && Array.isArray(cloud.transactions)) {
-        setTransactions(cloud.transactions);
-        StorageService.saveTransactions(cloud.transactions, currentUid);
-      }
-      if (cloud.todos && Array.isArray(cloud.todos)) {
-        const todayStr = getLocalDateString();
-        const refreshedTodos = cloud.todos.map((t: any) => {
-          if (t.isDailyRoutine || t.id === 'todo-daily-bible' || t.id === 'todo-daily-prayer') {
-            if (t.dueDate !== todayStr) {
-              return {
-                ...t,
-                dueDate: todayStr,
-                isCompleted: false,
-                completedAt: undefined,
-                subTasks: (t.subTasks || []).map((s: any) => ({ ...s, isDone: false })),
-              };
-            }
-          }
-          return t;
-        });
-        setTodos(refreshedTodos);
-        StorageService.saveTodos(refreshedTodos, currentUid);
-      }
-      if (cloud.verseNotes && Array.isArray(cloud.verseNotes)) {
-        setVerseNotes(cloud.verseNotes);
-        StorageService.saveVerseNotes(cloud.verseNotes, currentUid);
-      }
-      if (cloud.sermons && Array.isArray(cloud.sermons)) {
-        setSermons(cloud.sermons);
-        StorageService.saveSermons(cloud.sermons, currentUid);
-      }
-      if (cloud.memoryVerses && Array.isArray(cloud.memoryVerses)) {
-        setMemoryVerses(cloud.memoryVerses);
-        StorageService.saveMemoryVerses(cloud.memoryVerses, currentUid);
-      }
-      if (cloud.fastingRecords && Array.isArray(cloud.fastingRecords)) {
-        setFastingRecords(cloud.fastingRecords);
-        StorageService.saveFastingRecords(cloud.fastingRecords, currentUid);
-      }
-      if (cloud.bibleBooks && Array.isArray(cloud.bibleBooks) && cloud.bibleBooks.length > 0) {
-        setBibleBooks(cloud.bibleBooks);
-        StorageService.saveBibleBooks(cloud.bibleBooks, currentUid);
-      }
-      if (cloud.readingPlans && Array.isArray(cloud.readingPlans) && cloud.readingPlans.length > 0) {
-        setReadingPlans(cloud.readingPlans);
-        StorageService.saveReadingPlans(cloud.readingPlans, currentUid);
-      }
-      if (cloud.habits && Array.isArray(cloud.habits)) {
-        const sanitizedHabits = cloud.habits.map((h: any) => {
-          const allDates = Array.from(new Set((h.completedDates || []) as string[])).sort();
-          const streak = calculateHabitStreak(allDates);
-          const best = calculateBestHabitStreak(allDates);
-          return {
-            ...h,
-            completedDates: allDates,
-            currentStreak: streak,
-            bestStreak: best,
-          };
-        });
-        setHabits(sanitizedHabits);
-        StorageService.saveHabits(sanitizedHabits, currentUid);
-      }
-      if (cloud.decisionWheels && Array.isArray(cloud.decisionWheels)) {
-        setDecisionWheels(cloud.decisionWheels);
-        StorageService.saveDecisionWheels(cloud.decisionWheels, currentUid);
-      }
-      if (cloud.decisionResults && Array.isArray(cloud.decisionResults)) {
-        setDecisionResults(cloud.decisionResults);
-        StorageService.saveDecisionResults(cloud.decisionResults, currentUid);
-      }
-      if (cloud.userProfile && typeof cloud.userProfile === 'object') {
-        const prof = cloud.userProfile;
-        setUser((prev) => {
-          if (!prev) return prof;
-          return {
-            ...prev,
-            ...prof,
-            createdAt: prev.createdAt || prof.createdAt,
-            photoURL: prof.photoURL || prev.photoURL,
-          };
-        });
-        AuthService.setActiveUser(prof);
-        AuthService.saveUserToSavedList(prof);
-      }
-      if (cloud.settings && typeof cloud.settings === 'object') {
-        setSettings((prev) => ({ ...prev, ...cloud.settings }));
-        StorageService.saveSettings(cloud.settings);
-      }
-    });
-
     return () => {
+      isMounted = false;
       if (unsubscribe) unsubscribe();
     };
   }, [user?.id]);
@@ -1575,10 +1461,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Background Prayer Timer Ticker
   useEffect(() => {
     let interval: any = null;
-    if (prayerTimer.isRunning && prayerTimer.secondsLeft > 0) {
+    if (prayerTimer.isRunning) {
       interval = setInterval(() => {
         setPrayerTimer((prev) => {
-          if (prev.secondsLeft <= 1) {
+          if (!prev.isRunning || prev.secondsLeft <= 1) {
             return { ...prev, isRunning: false, secondsLeft: 0 };
           }
           return { ...prev, secondsLeft: prev.secondsLeft - 1 };
@@ -1588,7 +1474,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [prayerTimer.isRunning, prayerTimer.secondsLeft]);
+  }, [prayerTimer.isRunning]);
 
   const startPrayerTimer = (minutes?: number) => {
     const mins = minutes || prayerTimer.selectedMinutes || 10;
