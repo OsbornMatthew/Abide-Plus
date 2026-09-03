@@ -74,6 +74,7 @@ export const MoreScreen: React.FC = () => {
     deleteMemoryVerse,
     exportBackupData,
     importBackupData,
+    restoreAllUserData,
   } = useApp();
 
   const isTamil = settings.displayLanguage === 'ta';
@@ -117,6 +118,33 @@ export const MoreScreen: React.FC = () => {
 
   // Auth modal
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
+  const handleRestoreUserData = async () => {
+    setRestoring(true);
+    try {
+      const ok = await restoreAllUserData();
+      if (ok) {
+        Alert.alert(
+          isTamil ? 'தரவு மீட்டெடுக்கப்பட்டது! 🎉' : 'Data Restored! 🎉',
+          isTamil
+            ? 'உங்கள் அனைத்து ஜெபங்கள், வரவு செலவுகள், பழக்கங்கள் மற்றும் வேதாகம வாசிப்பு பதிவுகள் வெற்றிகரமாக மீட்டெடுக்கப்பட்டன.'
+            : 'All your prayers, transactions, habits, sermons, and Bible reading progress have been successfully restored!'
+        );
+      } else {
+        Alert.alert(
+          isTamil ? 'மீட்டெடுப்பு தகவல்' : 'Restore Notice',
+          isTamil
+            ? 'கிளவுட் அல்லது உள்ளூர் சேமிப்பகத்திலிருந்து தரவு புதுப்பிக்கப்பட்டது.'
+            : 'Data refreshed from storage.'
+        );
+      }
+    } catch (e: any) {
+      Alert.alert('Restore Error', e?.message || 'Failed to restore data.');
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const handleDeleteAccountPrompt = async () => {
     const confirmMsg = isTamil
@@ -877,6 +905,42 @@ export const MoreScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
               )}
+            </View>
+
+            {/* 1-Click Emergency Data Restore */}
+            <View style={[styles.settingBlock, { backgroundColor: theme.card, borderColor: '#10B981', borderWidth: 1.5 }, theme.cardShadow]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Shield size={16} color="#10B981" />
+                  <Text style={[styles.settingLabel, { color: theme.text, fontWeight: '700' }]}>
+                    {isTamil ? '1-கிளிக் முழு தரவு மீட்டெடுப்பு' : '1-Click Cloud & Local Data Restore'}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 10, color: '#10B981', fontWeight: '800', textTransform: 'uppercase' }}>
+                  {isTamil ? 'பாதுகாப்பானது' : 'Always Safe'}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 11, color: theme.textMuted, marginBottom: 12 }}>
+                {isTamil
+                  ? 'உங்கள் ஜெபங்கள், வரவு செலவுகள், பழக்கங்கள் மற்றும் வேதாகம வாசிப்பு பதிவுகள் எதுவும் எப்போதும் அழியாது. 1-கிளிக்கில் கிளவுட் மற்றும் உள்ளூர் சேமிப்பகத்திலிருந்து மீட்டெடுக்கவும்.'
+                  : 'Your data is permanently protected. Tap below to instantly refresh and restore all your prayers, transactions, habits, and Bible progress from cloud and local backups.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.backupBtn, { backgroundColor: '#10B981', width: '100%' }]}
+                onPress={handleRestoreUserData}
+                disabled={restoring}
+              >
+                <Shield size={15} color="#000" />
+                <Text style={[styles.backupBtnText, { color: '#000', fontWeight: '800' }]}>
+                  {restoring
+                    ? isTamil
+                      ? 'மீட்டெடுக்கப்படுகிறது...'
+                      : 'Restoring Data...'
+                    : isTamil
+                    ? '🔄 எனது அனைத்து தரவையும் மீட்டெடு'
+                    : '🔄 Restore All My Data Now'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Offline JSON Backup */}

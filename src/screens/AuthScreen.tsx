@@ -111,6 +111,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
   };
 
   const handleGoogleSignIn = async () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert(
+        isTamil ? 'Google உள்நுழைவு' : 'Google Sign-In',
+        isTamil
+          ? 'Android செயலியில் உங்கள் மின்னஞ்சல் மற்றும் கடவுச்சொல் மூலம் உள்நுழையவும் / பதிவு செய்யவும். Google 1-Click இணையதள பதிப்பில் கிடைக்கிறது.'
+          : 'On the Android app, please sign in or register with your Email & Password below. Google 1-Click popup is available on the Web app.'
+      );
+      return;
+    }
     setLoading(true);
     try {
       await loginWithGoogle();

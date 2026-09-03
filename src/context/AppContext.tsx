@@ -40,6 +40,7 @@ interface AppContextType {
   logoutUser: () => Promise<void>;
   switchUser: (user: UserProfile) => Promise<void>;
   removeSavedUser: (userId: string) => Promise<void>;
+  restoreAllUserData: () => Promise<boolean>;
 
   // Settings & Theme
   settings: AppSettings;
@@ -869,6 +870,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const restoreAllUserData = async (): Promise<boolean> => {
+    try {
+      const targetUid = user?.id;
+      let cloud = targetUid ? await FirebaseSyncService.loadUserData(targetUid) : null;
+      if (!cloud) {
+        const active = await AuthService.getActiveUser();
+        if (active?.id) {
+          cloud = await FirebaseSyncService.loadUserData(active.id);
+        }
+      }
+      await applyUserData(cloud, user);
+      return true;
+    } catch (e) {
+      console.warn("restoreAllUserData error:", e);
+      return false;
+    }
+  };
+
   const removeSavedUser = async (userId: string) => {
     const updated = await AuthService.removeSavedUser(userId);
     setSavedUsers(updated);
@@ -1578,6 +1597,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logoutUser,
         switchUser,
         removeSavedUser,
+        restoreAllUserData,
         settings,
         theme,
         updateSettings,

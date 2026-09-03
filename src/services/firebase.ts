@@ -22,6 +22,7 @@ import {
   Firestore
 } from "firebase/firestore";
 import { UserProfile } from "../types/auth";
+import { Platform } from "react-native";
 
 // Your Firebase web configuration
 const firebaseConfig = {
@@ -195,6 +196,9 @@ export const FirebaseSyncService = {
 
   // Real Google Sign-In with Firebase Auth
   async loginWithGoogle(): Promise<UserProfile> {
+    if (Platform.OS !== 'web') {
+      throw new Error("Google 1-Click Popup is supported on the Web browser version. On Android, please sign in or register with your Email and Password.");
+    }
     try {
       const provider = new GoogleAuthProvider();
       provider.addScope("profile");
