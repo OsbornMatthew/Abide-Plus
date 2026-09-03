@@ -95,10 +95,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
   };
 
   const handleGoogleSignIn = async () => {
-    if (Platform.OS !== 'web') {
-      setShowGoogleModal(true);
-      return;
-    }
     setLoading(true);
     try {
       await loginWithGoogle();
@@ -106,7 +102,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
       if (onClose) onClose();
     } catch (e: any) {
       console.error(e);
-      Alert.alert('Google Sign-In', e?.message || (isTamil ? 'Google உள்நுழைவு தோல்வியடைந்தது.' : 'Google Sign-In was cancelled or failed.'));
+      if (e?.message?.includes("cancelled")) {
+        return;
+      }
+      if (Platform.OS !== 'web') {
+        setShowGoogleModal(true);
+      } else {
+        Alert.alert('Google Sign-In', e?.message || (isTamil ? 'Google உள்நுழைவு தோல்வியடைந்தது.' : 'Google Sign-In was cancelled or failed.'));
+      }
     } finally {
       setLoading(false);
     }
