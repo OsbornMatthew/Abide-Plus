@@ -11,13 +11,11 @@ import {
   Alert,
   ActivityIndicator,
   Image,
-  Modal,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../context/AppContext';
 import { AbideLogo } from '../components/common/AbideLogo';
 import { UserProfile } from '../types/auth';
-import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck, Trash2, X, Check } from 'lucide-react-native';
+import { Mail, Lock, LogIn, UserPlus, Users, ArrowRight, ShieldCheck, Trash2, X } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 
 interface AuthScreenProps {
@@ -27,7 +25,7 @@ interface AuthScreenProps {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMandatory }) => {
-  const { theme, settings, loginUser, loginWithGoogle, loginWithGoogleAccount, savedUsers, switchUser, removeSavedUser, user } = useApp();
+  const { theme, settings, loginUser, savedUsers, switchUser, removeSavedUser, user } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -35,11 +33,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // Google 1-Click Fast Login Modal on Android
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState('osbornmatthewai@gmail.com');
-  const [googleNameInput, setGoogleNameInput] = useState('Osborn Matthew A I');
 
   const handleAuthSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -89,46 +82,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
         isTamil ? 'உள்நுழைவு பிழை' : 'Authentication Error',
         msg || (isTamil ? 'சரிபார்ப்பு தோல்வியடைந்தது.' : 'Authentication failed. Please check your credentials.')
       );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    try {
-      await loginWithGoogle();
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
-    } catch (e: any) {
-      console.error(e);
-      if (e?.message?.includes("cancelled")) {
-        return;
-      }
-      if (Platform.OS !== 'web') {
-        setShowGoogleModal(true);
-      } else {
-        Alert.alert('Google Sign-In', e?.message || (isTamil ? 'Google உள்நுழைவு தோல்வியடைந்தது.' : 'Google Sign-In was cancelled or failed.'));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleFastLogin = async (targetEmail: string, targetName?: string) => {
-    if (!targetEmail.trim()) {
-      Alert.alert('Required', isTamil ? 'Google மின்னஞ்சல் தேவை' : 'Google email address is required.');
-      return;
-    }
-    setLoading(true);
-    setShowGoogleModal(false);
-    try {
-      await loginWithGoogleAccount(targetEmail.trim(), targetName?.trim());
-      if (onSuccess) onSuccess();
-      if (onClose) onClose();
-    } catch (e: any) {
-      console.error(e);
-      Alert.alert('Google Sign-In', e?.message || 'Google account sign-in failed.');
     } finally {
       setLoading(false);
     }
@@ -213,33 +166,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
 
         {/* Main Auth Card */}
         <View style={[styles.authCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-          {/* GOOGLE SIGN IN BUTTON */}
-          <TouchableOpacity
-            style={[styles.googleBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.8}
-            disabled={loading}
-          >
-            <Svg width={18} height={18} viewBox="0 0 48 48">
-              <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </Svg>
-            <Text style={[styles.googleBtnText, { color: theme.text }]}>
-              {isTamil ? 'Google மூலம் தொடரவும்' : 'Continue with Google'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.line, { backgroundColor: theme.cardBorder }]} />
-            <Text style={[styles.dividerText, { color: theme.textMuted }]}>
-              {isTamil ? 'அல்லது மின்னஞ்சல்' : 'or Email & Password'}
-            </Text>
-            <View style={[styles.line, { backgroundColor: theme.cardBorder }]} />
-          </View>
-
           <Text style={[styles.authTitle, { color: theme.text }]}>
             {isRegisterMode
               ? isTamil
@@ -425,81 +351,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
           </TouchableOpacity>
         )}
       </ScrollView>
-
-      {/* Google 1-Click Fast Connect Modal */}
-      <Modal visible={showGoogleModal} animationType="slide" transparent onRequestClose={() => setShowGoogleModal(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Svg width={20} height={20} viewBox="0 0 48 48">
-                  <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                </Svg>
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  {isTamil ? 'Google கணக்குடன் இணைக்கவும்' : 'Connect Google Account'}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowGoogleModal(false)}>
-                <X size={18} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalSubtitle, { color: theme.textMuted }]}>
-              {isTamil
-                ? 'உங்கள் Google மின்னஞ்சல் முகவரியை உள்ளிட்டு 1-கிளிக்கில் கிளவுட் தரவை மீட்டெடுத்து உள்நுழையவும்.'
-                : 'Enter your Google email to instantly sign in and restore your complete cloud backup in 1 click.'}
-            </Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                {isTamil ? 'Google மின்னஞ்சல்' : 'Google Email Address'}
-              </Text>
-              <TextInput
-                style={[styles.inputField, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
-                placeholder="yourname@gmail.com"
-                placeholderTextColor={theme.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={googleEmailInput}
-                onChangeText={setGoogleEmailInput}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                {isTamil ? 'பெயர்' : 'Display Name'}
-              </Text>
-              <TextInput
-                style={[styles.inputField, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
-                placeholder="Osborn Matthew"
-                placeholderTextColor={theme.textMuted}
-                value={googleNameInput}
-                onChangeText={setGoogleNameInput}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.googleFastBtn, { backgroundColor: theme.primary }]}
-              onPress={() => handleGoogleFastLogin(googleEmailInput, googleNameInput)}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#000" />
-              ) : (
-                <Check size={16} color="#000" />
-              )}
-              <Text style={styles.googleFastBtnText}>
-                {loading
-                  ? isTamil ? 'இணைக்கப்படுகிறது...' : 'Connecting...'
-                  : isTamil ? '1-கிளிக் Google உள்நுழைவு' : '1-Click Google Sign-In & Restore'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -575,34 +426,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     marginBottom: spacing.lg,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-  googleBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-    gap: 8,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 11,
-    fontWeight: '600',
   },
   authTitle: {
     fontSize: 16,
@@ -706,48 +529,5 @@ const styles = StyleSheet.create({
   removeUserBtn: {
     padding: 6,
     borderRadius: 6,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    padding: spacing.xl,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  modalTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: spacing.lg,
-  },
-  googleFastBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 13,
-    borderRadius: borderRadius.md,
-    marginTop: spacing.sm,
-  },
-  googleFastBtnText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '800',
   },
 });

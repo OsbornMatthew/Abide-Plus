@@ -36,8 +36,6 @@ interface AppContextType {
   user: UserProfile | null;
   savedUsers: UserProfile[];
   loginUser: (email: string, pass: string, displayName?: string, isRegister?: boolean) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithGoogleAccount: (email: string, displayName?: string) => Promise<void>;
   logoutUser: () => Promise<void>;
   switchUser: (user: UserProfile) => Promise<void>;
   removeSavedUser: (userId: string) => Promise<void>;
@@ -639,53 +637,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       loggedIn = await FirebaseSyncService.registerUser(email, pass, displayName);
     } else {
       loggedIn = await FirebaseSyncService.loginUser(email, pass);
-    }
-
-    await AuthService.saveUserToSavedList(loggedIn);
-    await AuthService.setActiveUser(loggedIn);
-    setUser(loggedIn);
-    const updatedUsers = await AuthService.getSavedUsers();
-    setSavedUsers(updatedUsers);
-    await updateSettings({ userName: loggedIn.displayName });
-
-    const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
-    await applyUserData(cloud, loggedIn);
-  };
-
-  const loginWithGoogle = async () => {
-    const loggedIn = await FirebaseSyncService.loginWithGoogle();
-    await AuthService.saveUserToSavedList(loggedIn);
-    await AuthService.setActiveUser(loggedIn);
-    setUser(loggedIn);
-    const updatedUsers = await AuthService.getSavedUsers();
-    setSavedUsers(updatedUsers);
-    await updateSettings({ userName: loggedIn.displayName });
-
-    const cloud = await FirebaseSyncService.loadUserData(loggedIn.id);
-    await applyUserData(cloud, loggedIn);
-  };
-
-  const loginWithGoogleAccount = async (googleEmail: string, googleDisplayName?: string) => {
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    const name = googleDisplayName?.trim() || cleanEmail.split("@")[0] || "Pilgrim";
-    
-    let loggedIn: UserProfile;
-    try {
-      loggedIn = await FirebaseSyncService.loginUser(cleanEmail, "GoogleAuth123!#");
-    } catch {
-      try {
-        loggedIn = await FirebaseSyncService.registerUser(cleanEmail, "GoogleAuth123!#", name);
-      } catch {
-        const uid = cleanEmail.replace(/[^a-zA-Z0-9_-]/g, "_");
-        loggedIn = {
-          id: uid,
-          email: cleanEmail,
-          displayName: name,
-          avatarColor: "#4285F4",
-          createdAt: new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-        };
-      }
     }
 
     await AuthService.saveUserToSavedList(loggedIn);
@@ -1514,8 +1465,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         user,
         savedUsers,
         loginUser,
-        loginWithGoogle,
-        loginWithGoogleAccount,
         logoutUser,
         switchUser,
         removeSavedUser,

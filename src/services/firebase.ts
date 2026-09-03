@@ -5,9 +5,6 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithCredential,
   onAuthStateChanged as fbOnAuthStateChanged,
   User as FirebaseUser,
   Auth
@@ -193,70 +190,6 @@ export const FirebaseSyncService = {
 
     await this.syncUserData(fbUser.uid, { userProfile: profile });
     return profile;
-  },
-
-  // Real Google Sign-In with Firebase Auth (Web & Native Android)
-  async loginWithGoogle(): Promise<UserProfile> {
-    try {
-      let fbUser: FirebaseUser;
-
-      if (Platform.OS === 'web') {
-        const provider = new GoogleAuthProvider();
-        provider.addScope("profile");
-        provider.addScope("email");
-        provider.setCustomParameters({ prompt: "select_account" });
-        const res = await signInWithPopup(auth, provider);
-        fbUser = res.user;
-      } else {
-        // Native Android Google Sign-In
-        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-        GoogleSignin.configure({
-          webClientId: '702446398120-7rreh6iqfiktm5hhtnpmb2pald6o855a.apps.googleusercontent.com',
-          offlineAccess: false,
-        });
-
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-        const signInResult = await GoogleSignin.signIn();
-        const idToken = signInResult.data?.idToken || (signInResult as any).idToken;
-        if (!idToken) throw new Error("Google Sign-In was cancelled or did not return an ID token.");
-
-        const credential = GoogleAuthProvider.credential(idToken);
-        const res = await signInWithCredential(auth, credential);
-        fbUser = res.user;
-      }
-
-      // Load existing profile from Firestore to preserve true joined date & avatar
-      const existingCloud = await this.loadUserData(fbUser.uid);
-      const existingProfile = existingCloud?.userProfile;
-
-      const createdTime =
-        existingProfile?.createdAt ||
-        (fbUser.metadata?.creationTime
-          ? new Date(fbUser.metadata.creationTime).toISOString()
-          : new Date().toISOString());
-
-      const profile: UserProfile = {
-        id: fbUser.uid,
-        email: fbUser.email || "user@abide.plus",
-        displayName: fbUser.displayName || existingProfile?.displayName || (fbUser.email ? fbUser.email.split("@")[0] : "Believer"),
-        avatarColor: existingProfile?.avatarColor || "#4285F4",
-        photoURL: fbUser.photoURL || existingProfile?.photoURL || undefined,
-        createdAt: createdTime,
-        lastLoginAt: new Date().toISOString(),
-      };
-
-      await this.syncUserData(fbUser.uid, { userProfile: profile });
-      return profile;
-    } catch (err: any) {
-      console.warn("Google sign-in error:", err);
-      if (err?.code === "auth/unauthorized-domain") {
-        throw new Error("This domain is not authorized in Firebase. Please add your Vercel URL to Firebase Console -> Authentication -> Settings -> Authorized Domains.");
-      }
-      if (err?.code === "auth/popup-closed-by-user" || err?.code === "SIGN_IN_CANCELLED" || err?.message?.includes("CANCELLED")) {
-        throw new Error("Google sign-in was cancelled.");
-      }
-      throw err;
-    }
   },
 
   async logout(): Promise<void> {

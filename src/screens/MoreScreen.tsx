@@ -901,7 +901,7 @@ export const MoreScreen: React.FC = () => {
                   onPress={() => setShowAuthModal(true)}
                 >
                   <Text style={styles.backupBtnText}>
-                    {isTamil ? 'Google / மின்னஞ்சல் மூலம் உள்நுழைக' : 'Sign In with Google / Email'}
+                    {isTamil ? 'மின்னஞ்சல் மூலம் உள்நுழைக' : 'Sign In with Email'}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -937,8 +937,8 @@ export const MoreScreen: React.FC = () => {
                       ? 'மீட்டெடுக்கப்படுகிறது...'
                       : 'Restoring Data...'
                     : isTamil
-                    ? '🔄 எனது அனைத்து தரவையும் மீட்டெடு'
-                    : '🔄 Restore All My Data Now'}
+                    ? 'எனது அனைத்து தரவையும் மீட்டெடு'
+                    : 'Restore All My Data Now'}
                 </Text>
               </TouchableOpacity>
             </View>
