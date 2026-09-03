@@ -22,9 +22,6 @@ react {
     // Empty list means JS bundle and assets are ALWAYS bundled inside the APK for offline execution
     debuggableVariants = []
 
-    enableHermes = true
-    hermesFlags = ["-O", "-output-source-map"]
-
     /* Autolinking */
     autolinkLibrariesWithApp()
 }
