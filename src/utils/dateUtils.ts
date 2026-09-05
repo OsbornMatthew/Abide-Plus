@@ -131,3 +131,101 @@ export const calculateBestHabitStreak = (completedDates: string[] = []): number 
 
   return maxStreak;
 };
+
+/**
+ * Formats a Date object or string (YYYY-MM-DD or DD-MM-YYYY or ISO) to DD-MM-YYYY.
+ */
+export const formatDateDDMMYYYY = (input?: string | Date | null): string => {
+  if (!input) {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  if (input instanceof Date) {
+    if (isNaN(input.getTime())) return '';
+    const day = String(input.getDate()).padStart(2, '0');
+    const month = String(input.getMonth() + 1).padStart(2, '0');
+    const year = input.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  const str = input.trim();
+  // If already DD-MM-YYYY (e.g. 05-09-2026 or 5-9-2026)
+  const ddmmyyyyMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const day = ddmmyyyyMatch[1].padStart(2, '0');
+    const month = ddmmyyyyMatch[2].padStart(2, '0');
+    const year = ddmmyyyyMatch[3];
+    return `${day}-${month}-${year}`;
+  }
+
+  // If YYYY-MM-DD (e.g. 2026-09-05 or ISO 2026-09-05T...)
+  const yyyymmddMatch = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (yyyymmddMatch) {
+    const year = yyyymmddMatch[1];
+    const month = yyyymmddMatch[2].padStart(2, '0');
+    const day = yyyymmddMatch[3].padStart(2, '0');
+    return `${day}-${month}-${year}`;
+  }
+
+  return str;
+};
+
+/**
+ * Parses any date string (DD-MM-YYYY or YYYY-MM-DD or Date) into standard ISO YYYY-MM-DD.
+ */
+export const parseDateToISO = (input?: string | Date | null): string => {
+  if (!input) {
+    return getLocalDateString();
+  }
+
+  if (input instanceof Date) {
+    return getLocalDateString(input);
+  }
+
+  const str = input.trim();
+  // Check DD-MM-YYYY
+  const ddmmyyyyMatch = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (ddmmyyyyMatch) {
+    const day = ddmmyyyyMatch[1].padStart(2, '0');
+    const month = ddmmyyyyMatch[2].padStart(2, '0');
+    const year = ddmmyyyyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Check YYYY-MM-DD
+  const yyyymmddMatch = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (yyyymmddMatch) {
+    const year = yyyymmddMatch[1];
+    const month = yyyymmddMatch[2].padStart(2, '0');
+    const day = yyyymmddMatch[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return str;
+};
+
+/**
+ * Returns today's date formatted as DD-MM-YYYY.
+ */
+export const getTodayDDMMYYYY = (): string => {
+  return formatDateDDMMYYYY(new Date());
+};
+
+/**
+ * Adjusts a DD-MM-YYYY date by a specified number of days (e.g., +1, -1).
+ */
+export const shiftDateDDMMYYYY = (currentDDMMYYYY: string, daysDelta: number): string => {
+  const iso = parseDateToISO(currentDDMMYYYY);
+  const parts = iso.split('-').map(Number);
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2] + daysDelta);
+    return formatDateDDMMYYYY(d);
+  }
+  const now = new Date();
+  now.setDate(now.getDate() + daysDelta);
+  return formatDateDDMMYYYY(now);
+};

@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useApp } from '../../context/AppContext';
-import { TransactionType, IncomeCategory, ExpenseCategory, GivingCategory, SavingsCategory } from '../../types/finance';
+import { Transaction, TransactionType, IncomeCategory, ExpenseCategory, GivingCategory, SavingsCategory } from '../../types/finance';
 import {
   X,
   Check,
@@ -22,15 +22,20 @@ import {
   Coins,
   Calendar,
   PenLine,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../../theme/spacing';
+import { formatDateDDMMYYYY, parseDateToISO, getTodayDDMMYYYY, shiftDateDDMMYYYY } from '../../utils/dateUtils';
 
 interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   defaultType?: TransactionType;
   defaultCategory?: string;
-  defaultDate?: string; // YYYY-MM-DD
+  defaultDate?: string; // YYYY-MM-DD or DD-MM-YYYY
+  transactionToEdit?: Transaction | null;
 }
 
 const INCOME_CATEGORIES: IncomeCategory[] = [
@@ -83,47 +88,51 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   defaultType = 'expense',
   defaultCategory,
   defaultDate,
+  transactionToEdit,
 }) => {
-  const { theme, settings, addTransaction } = useApp();
+  const { theme, settings, addTransaction, updateTransaction } = useApp();
   const isTamil = settings.displayLanguage === 'ta';
   const currencySym = settings.currency.symbol;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const isEditing = Boolean(transactionToEdit);
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<string>(defaultCategory || 'Groceries & Food');
   const [note, setNote] = useState('');
   const [recipientOrSource, setRecipientOrSource] = useState('');
-  const [selectedDate, setSelectedDate] = useState<string>(defaultDate || todayStr);
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    formatDateDDMMYYYY(defaultDate || new Date())
+  );
 
-  // Compute next month 1st date
-  const nextMonthFirstStr = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(1);
-    return d.toISOString().split('T')[0];
-  })();
-
-  // Reset or update state whenever modal opens or defaultType changes
+  // Reset or update state whenever modal opens or props change
   useEffect(() => {
     if (visible) {
-      setType(defaultType);
-      if (defaultCategory) {
-        setCategory(defaultCategory);
+      if (transactionToEdit) {
+        setType(transactionToEdit.type);
+        setCategory(transactionToEdit.category || 'General');
+        setAmount(transactionToEdit.amount ? String(transactionToEdit.amount) : '');
+        setNote(transactionToEdit.note || '');
+        setRecipientOrSource(transactionToEdit.recipientOrSource || '');
+        setSelectedDate(formatDateDDMMYYYY(transactionToEdit.date));
       } else {
-        if (defaultType === 'income') setCategory('Salary');
-        else if (defaultType === 'expense') setCategory('Groceries & Food');
-        else if (defaultType === 'tithe') setCategory('Tithe (10%)');
-        else if (defaultType === 'savings') setCategory('Emergency Fund');
-        else if (defaultType === 'offering') setCategory('Missions & Evang.');
-        else if (defaultType === 'benevolence') setCategory('Benevolence / Alms');
+        setType(defaultType);
+        if (defaultCategory) {
+          setCategory(defaultCategory);
+        } else {
+          if (defaultType === 'income') setCategory('Salary');
+          else if (defaultType === 'expense') setCategory('Groceries & Food');
+          else if (defaultType === 'tithe') setCategory('Tithe (10%)');
+          else if (defaultType === 'savings') setCategory('Emergency Fund');
+          else if (defaultType === 'offering') setCategory('Missions & Evang.');
+          else if (defaultType === 'benevolence') setCategory('Benevolence / Alms');
+        }
+        setAmount('');
+        setNote('');
+        setRecipientOrSource('');
+        setSelectedDate(formatDateDDMMYYYY(defaultDate || new Date()));
       }
-      setAmount('');
-      setNote('');
-      setRecipientOrSource('');
-      setSelectedDate(defaultDate || todayStr);
     }
-  }, [visible, defaultType, defaultCategory, defaultDate, todayStr]);
+  }, [visible, defaultType, defaultCategory, defaultDate, transactionToEdit]);
 
   const getCategoryLabel = (cat: string) => {
     if (!isTamil) return cat;
@@ -205,14 +214,27 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
 
-    await addTransaction({
-      type,
-      amount: numAmount,
-      category: category.trim() || 'General',
-      note: note.trim() || undefined,
-      recipientOrSource: recipientOrSource.trim() || undefined,
-      date: selectedDate,
-    });
+    const isoDate = parseDateToISO(selectedDate);
+
+    if (isEditing && transactionToEdit) {
+      await updateTransaction(transactionToEdit.id, {
+        type,
+        amount: numAmount,
+        category: category.trim() || 'General',
+        note: note.trim() || undefined,
+        recipientOrSource: recipientOrSource.trim() || undefined,
+        date: isoDate,
+      });
+    } else {
+      await addTransaction({
+        type,
+        amount: numAmount,
+        category: category.trim() || 'General',
+        note: note.trim() || undefined,
+        recipientOrSource: recipientOrSource.trim() || undefined,
+        date: isoDate,
+      });
+    }
 
     onClose();
   };
@@ -249,7 +271,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </View>
               <View>
                 <Text style={[styles.headerTitle, { color: theme.text }]}>
-                  {type === 'income'
+                  {isEditing
+                    ? type === 'income'
+                      ? (isTamil ? 'வருமானத்தைத் திருத்த' : 'Edit Income')
+                      : type === 'expense'
+                      ? (isTamil ? 'செலவைத் திருத்த' : 'Edit Expense')
+                      : type === 'savings'
+                      ? (isTamil ? 'சேமிப்பைத் திருத்த' : 'Edit Savings')
+                      : (isTamil ? 'தசமபாகத்தைத் திருத்த' : 'Edit Tithe & Giving')
+                    : type === 'income'
                     ? (isTamil ? 'வருமானம் சேர்க்க' : 'Add Income')
                     : type === 'expense'
                     ? (isTamil ? 'செலவு பதிய' : 'Log Expense')
@@ -258,7 +288,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                     : (isTamil ? 'தசமபாகம் / காணிக்கை' : 'Tithe & Giving')}
                 </Text>
                 <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
-                  {isTamil ? 'காரியஸ்த நிதிப்பதிவு' : 'Stewardship Financial Entry'}
+                  {isEditing
+                    ? (isTamil ? 'பரிவர்த்தனை விவரங்களை மாற்றுக' : 'Edit Transaction Details')
+                    : (isTamil ? 'காரியஸ்த நிதிப்பதிவு' : 'Stewardship Financial Entry')}
                 </Text>
               </View>
             </View>
@@ -399,58 +431,61 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </View>
             )}
 
-            {/* Date & Month Selection */}
+            {/* Date & Month Selection in DD-MM-YYYY */}
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <Text style={[styles.label, { color: theme.textMuted }]}>
-                  {isTamil ? 'தேதி / மாதம்' : 'Date / Month'}
+                  {isTamil ? 'தேதி (DD-MM-YYYY)' : 'Date (DD-MM-YYYY)'}
                 </Text>
                 <Text style={[styles.activeDateText, { color: theme.primary }]}>
                   {selectedDate}
                 </Text>
               </View>
 
-              {/* Quick Date Chips (Today | 1st of This Month | Next Month 1st) */}
-              <View style={styles.dateChipsRow}>
+              {/* Easy Day Stepper (-1 Day / Date Badge / +1 Day) */}
+              <View style={styles.dateControlRow}>
                 <TouchableOpacity
-                  style={[
-                    styles.dateChip,
-                    {
-                      backgroundColor: selectedDate === todayStr ? theme.primary : theme.cardAlt,
-                      borderColor: selectedDate === todayStr ? theme.primary : theme.cardBorder,
-                    },
-                  ]}
-                  onPress={() => setSelectedDate(todayStr)}
+                  style={[styles.dateStepBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+                  onPress={() => setSelectedDate((curr) => shiftDateDDMMYYYY(curr, -1))}
+                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.dateChipText, { color: selectedDate === todayStr ? '#000' : theme.text }]}>
-                    {isTamil ? 'இன்று' : 'Today'}
+                  <ChevronLeft size={14} color={theme.text} />
+                  <Text style={[styles.dateStepBtnText, { color: theme.text }]}>
+                    {isTamil ? '-1 நாள்' : '-1 Day'}
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.dateChip,
-                    {
-                      backgroundColor: selectedDate === nextMonthFirstStr ? theme.primary : theme.cardAlt,
-                      borderColor: selectedDate === nextMonthFirstStr ? theme.primary : theme.cardBorder,
-                    },
-                  ]}
-                  onPress={() => setSelectedDate(nextMonthFirstStr)}
-                >
-                  <Text style={[styles.dateChipText, { color: selectedDate === nextMonthFirstStr ? '#000' : theme.text }]}>
-                    {isTamil ? 'அடுத்த மாதம் (Next Month)' : 'Next Month'}
+                <View style={[styles.dateCenterBadge, { backgroundColor: theme.primary + '18', borderColor: theme.primary + '35' }]}>
+                  <Calendar size={13} color={theme.primary} />
+                  <Text style={[styles.dateCenterBadgeText, { color: theme.primary }]}>
+                    {selectedDate}
                   </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.dateStepBtn, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}
+                  onPress={() => setSelectedDate((curr) => shiftDateDDMMYYYY(curr, 1))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dateStepBtnText, { color: theme.text }]}>
+                    {isTamil ? '+1 நாள்' : '+1 Day'}
+                  </Text>
+                  <ChevronRight size={14} color={theme.text} />
                 </TouchableOpacity>
               </View>
 
-              {/* Manual Date Input */}
+              {/* Direct Manual Date Input in DD-MM-YYYY */}
               <TextInput
                 style={[styles.dateInput, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
                 value={selectedDate}
                 onChangeText={setSelectedDate}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD-MM-YYYY"
                 placeholderTextColor={theme.textMuted}
+                keyboardType="numbers-and-punctuation"
               />
+              <Text style={[styles.dateHelperHint, { color: theme.textMuted }]}>
+                {isTamil ? 'வடிவம்: DD-MM-YYYY (எ.கா. 05-09-2026)' : 'Format: DD-MM-YYYY (e.g. 05-09-2026)'}
+              </Text>
             </View>
 
             {/* Amount Input */}
@@ -574,23 +609,35 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               />
             </View>
 
-            {/* Recipient */}
-            {(type === 'tithe' || type === 'offering' || type === 'benevolence') && (
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: theme.textMuted }]}>
-                  {isTamil ? 'பெறுநர் / திருச்சபை' : 'Recipient / Ministry'}
-                </Text>
-                <TextInput
-                  style={[styles.textInput, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
-                  placeholder={isTamil ? 'எ.கா. உள்ளூர் சபை' : 'e.g. Local Church Storehouse'}
-                  placeholderTextColor={theme.textMuted}
-                  value={recipientOrSource}
-                  onChangeText={setRecipientOrSource}
-                />
-              </View>
-            )}
+            {/* Payee / Recipient / Source for all transaction types */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.textMuted }]}>
+                {type === 'expense'
+                  ? (isTamil ? 'கடை / பெறுநர் (Payee / Store)' : 'Payee / Store / Merchant')
+                  : type === 'income'
+                  ? (isTamil ? 'மூலம் / நிறுவனம் (Payer)' : 'Source / Employer / Payer')
+                  : type === 'savings'
+                  ? (isTamil ? 'வங்கி / சேமிப்பு இடம்' : 'Bank / Account / Institution')
+                  : (isTamil ? 'பெறுநர் / திருச்சபை' : 'Recipient / Ministry')}
+              </Text>
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder, color: theme.text }]}
+                placeholder={
+                  type === 'expense'
+                    ? (isTamil ? 'எ.கா. சூப்பர் மார்க்கெட், மளிகைக் கடை' : 'e.g. Supermarket, Amazon, Landlord')
+                    : type === 'income'
+                    ? (isTamil ? 'எ.கா. நிறுவனம், வாடிக்கையாளர்' : 'e.g. Company, Client')
+                    : type === 'savings'
+                    ? (isTamil ? 'எ.கா. SBI, தபால் சேமிப்பு' : 'e.g. Bank Savings, FD')
+                    : (isTamil ? 'எ.கா. உள்ளூர் சபை, ஊழியர்' : 'e.g. Local Church, Mission')
+                }
+                placeholderTextColor={theme.textMuted}
+                value={recipientOrSource}
+                onChangeText={setRecipientOrSource}
+              />
+            </View>
 
-            {/* Single Clean Save Button */}
+            {/* Single Clean Save / Update Button */}
             <TouchableOpacity
               style={[
                 styles.submitBtn,
@@ -616,7 +663,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   { color: type === 'expense' || type === 'savings' ? '#FFF' : '#000' },
                 ]}
               >
-                {isTamil ? 'சேமிக்கவும்' : 'Save Record'}
+                {isEditing
+                  ? (isTamil ? 'மாற்றங்களைச் சேமிக்கவும்' : 'Update Record')
+                  : (isTamil ? 'சேமிக்கவும்' : 'Save Record')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -738,20 +787,43 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  dateChipsRow: {
+  dateControlRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs + 2,
     gap: 8,
-    marginBottom: 6,
   },
-  dateChip: {
+  dateStepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: borderRadius.pill,
+    paddingVertical: 7,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
+    gap: 3,
   },
-  dateChipText: {
+  dateStepBtnText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  dateCenterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    gap: 5,
+  },
+  dateCenterBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  dateHelperHint: {
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: '500',
   },
   dateInput: {
     borderWidth: 1,

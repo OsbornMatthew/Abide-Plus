@@ -9,7 +9,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Header } from '../components/common/Header';
 import { AddTransactionModal } from '../components/modals/AddTransactionModal';
-import { TransactionType } from '../types/finance';
+import { Transaction, TransactionType } from '../types/finance';
 import {
   HandCoins,
   Heart,
@@ -25,8 +25,10 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowDownLeft,
+  Edit3,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
+import { formatDateDDMMYYYY, parseDateToISO, getTodayDDMMYYYY } from '../utils/dateUtils';
 
 export const FinanceScreen: React.FC = React.memo(() => {
   const { theme, settings, transactions, deleteTransaction } = useApp();
@@ -42,6 +44,7 @@ export const FinanceScreen: React.FC = React.memo(() => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'income' | 'expense' | 'giving' | 'savings'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalDefaultType, setModalDefaultType] = useState<TransactionType>('expense');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Month navigation helpers
   const handlePrevMonth = () => {
@@ -86,13 +89,16 @@ export const FinanceScreen: React.FC = React.memo(() => {
     let priorSavings = 0;
 
     transactions.forEach((tx) => {
-      if (tx.date && tx.date < startOfMonthStr) {
-        const amt = Number(tx.amount) || 0;
-        if (tx.type === 'income') priorIncome += amt;
-        else if (tx.type === 'expense') priorExpense += amt;
-        else if (tx.type === 'savings') priorSavings += amt;
-        else if (tx.type === 'tithe' || tx.type === 'offering' || tx.type === 'benevolence') {
-          priorGiving += amt;
+      if (tx.date) {
+        const iso = parseDateToISO(tx.date);
+        if (iso < startOfMonthStr) {
+          const amt = Number(tx.amount) || 0;
+          if (tx.type === 'income') priorIncome += amt;
+          else if (tx.type === 'expense') priorExpense += amt;
+          else if (tx.type === 'savings') priorSavings += amt;
+          else if (tx.type === 'tithe' || tx.type === 'offering' || tx.type === 'benevolence') {
+            priorGiving += amt;
+          }
         }
       }
     });
@@ -104,7 +110,8 @@ export const FinanceScreen: React.FC = React.memo(() => {
   const monthlyTransactions = useMemo(() => {
     return transactions.filter((t) => {
       if (!t.date) return false;
-      return t.date.startsWith(selectedYearMonthStr);
+      const iso = parseDateToISO(t.date);
+      return iso.startsWith(selectedYearMonthStr);
     });
   }, [transactions, selectedYearMonthStr]);
 
@@ -162,7 +169,13 @@ export const FinanceScreen: React.FC = React.memo(() => {
 
   // Direct open helper for specific transaction types
   const openModal = (tType: TransactionType) => {
+    setEditingTransaction(null);
     setModalDefaultType(tType);
+    setShowAddModal(true);
+  };
+
+  const handleEditTransaction = (tx: Transaction) => {
+    setEditingTransaction(tx);
     setShowAddModal(true);
   };
 
@@ -588,9 +601,11 @@ export const FinanceScreen: React.FC = React.memo(() => {
               const tagColor = isInc ? theme.incomeColor : isSav ? theme.balanceColor : isGiv ? theme.primary : theme.expenseColor;
 
               return (
-                <View
+                <TouchableOpacity
                   key={tx.id}
                   style={[styles.txCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}
+                  onPress={() => handleEditTransaction(tx)}
+                  activeOpacity={0.7}
                 >
                   <View style={[styles.txIconBox, { backgroundColor: tagColor + '20' }]}>
                     {isInc ? (
@@ -605,22 +620,46 @@ export const FinanceScreen: React.FC = React.memo(() => {
                   </View>
 
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.txCategory, { color: theme.text }]}>{tx.category}</Text>
-                    <Text style={[styles.txNote, { color: theme.textMuted }]} numberOfLines={1}>
-                      {tx.note}
-                    </Text>
-                    <Text style={[styles.txDate, { color: theme.textMuted }]}>{tx.date}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={[styles.txCategory, { color: theme.text }]}>{tx.category}</Text>
+                      {Boolean(tx.recipientOrSource) && (
+                        <View style={[styles.recipientBadge, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}>
+                          <Text style={[styles.recipientBadgeText, { color: theme.textMuted }]} numberOfLines={1}>
+                            {tx.recipientOrSource}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    {Boolean(tx.note) && (
+                      <Text style={[styles.txNote, { color: theme.textMuted }]} numberOfLines={1}>
+                        {tx.note}
+                      </Text>
+                    )}
+                    <Text style={[styles.txDate, { color: theme.textMuted }]}>{formatDateDDMMYYYY(tx.date)}</Text>
                   </View>
 
                   <View style={styles.txRightCol}>
                     <Text style={[styles.txAmount, { color: isInc ? theme.incomeColor : isSav ? theme.balanceColor : theme.text }]}>
                       {isInc ? '+' : '-'}{currencySym}{tx.amount.toLocaleString()}
                     </Text>
-                    <TouchableOpacity onPress={() => deleteTransaction(tx.id)} style={styles.deleteTxBtn}>
-                      <Trash2 size={13} color={theme.textMuted} />
-                    </TouchableOpacity>
+                    <View style={styles.txActionButtonsRow}>
+                      <TouchableOpacity
+                        onPress={() => handleEditTransaction(tx)}
+                        style={[styles.actionTxBtn, { backgroundColor: theme.cardAlt }]}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Edit3 size={13} color={theme.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => deleteTransaction(tx.id)}
+                        style={[styles.actionTxBtn, { backgroundColor: theme.cardAlt }]}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Trash2 size={13} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })
           ) : (
@@ -634,12 +673,22 @@ export const FinanceScreen: React.FC = React.memo(() => {
         </View>
       </ScrollView>
 
-      {/* Add Transaction Modal with Selected Month Seed */}
+      {/* Add / Edit Transaction Modal with Selected Month / Current Date Seed */}
       <AddTransactionModal
         visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        defaultType={modalDefaultType}
-        defaultDate={`${selectedYearMonthStr}-01`}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingTransaction(null);
+        }}
+        defaultType={editingTransaction ? editingTransaction.type : modalDefaultType}
+        defaultDate={
+          editingTransaction
+            ? formatDateDDMMYYYY(editingTransaction.date)
+            : isCurrentMonthNow
+            ? getTodayDDMMYYYY()
+            : formatDateDDMMYYYY(currentViewDate)
+        }
+        transactionToEdit={editingTransaction}
       />
     </View>
   );
@@ -951,9 +1000,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
-  deleteTxBtn: {
-    marginTop: 3,
-    padding: 2,
+  txActionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  actionTxBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recipientBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    maxWidth: 140,
+  },
+  recipientBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
   },
   emptyBox: {
     paddingVertical: spacing.xl,
