@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, StatusBar, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, View, Text, StatusBar, ActivityIndicator, Platform } from 'react-native';
 import { enableScreens } from 'react-native-screens';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider, useApp } from './src/context/AppContext';
@@ -41,6 +41,11 @@ const MainApp: React.FC = () => {
         />
         <AbideLogo fontSize={28} />
         <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: 16 }} />
+        <View style={styles.splashFooter}>
+          <Text style={[styles.splashFooterText, { color: theme.textMuted }]}>
+            Made by Osborn Matthew | JoyfulTurn
+          </Text>
+        </View>
       </View>
     );
   }
@@ -71,5 +76,15 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  splashFooter: {
+    position: 'absolute',
+    bottom: 28,
+    alignItems: 'center',
+  },
+  splashFooterText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });

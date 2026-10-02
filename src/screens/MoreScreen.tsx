@@ -21,6 +21,7 @@ import { DecisionWheelView } from '../components/decision/DecisionWheelView';
 import { EditWheelModal } from '../components/modals/EditWheelModal';
 import { DecisionHistoryModal } from '../components/modals/DecisionHistoryModal';
 import { AccountDetailsModal } from '../components/modals/AccountDetailsModal';
+import { AbideLogo } from '../components/common/AbideLogo';
 import {
   Flame,
   BookMarked,
@@ -45,6 +46,7 @@ import {
   Disc,
   Shield,
   User,
+  Heart,
 } from 'lucide-react-native';
 import { spacing, borderRadius } from '../theme/spacing';
 import { typography } from '../theme/typography';
@@ -978,6 +980,28 @@ export const MoreScreen: React.FC = React.memo(() => {
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* About & Developer Attribution */}
+            <View style={[styles.aboutCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }, theme.cardShadow]}>
+              <View style={styles.aboutHeader}>
+                <AbideLogo fontSize={17} showIconImage={true} iconSize={26} />
+                <View style={[styles.versionBadge, { backgroundColor: theme.cardAlt, borderColor: theme.cardBorder }]}>
+                  <Text style={[styles.versionText, { color: theme.textMuted }]}>v1.0.0</Text>
+                </View>
+              </View>
+
+              <View style={[styles.aboutDivider, { backgroundColor: theme.cardBorder }]} />
+
+              <View style={styles.aboutCreditRow}>
+                <Heart size={14} color="#EC4899" fill="#EC4899" />
+                <Text style={[styles.aboutCreditLabel, { color: theme.textMuted }]}>
+                  {isTamil ? 'உருவாக்கியவர்' : 'Made by'}:{' '}
+                  <Text style={[styles.aboutCreditAuthor, { color: theme.text }]}>
+                    Osborn Matthew | JoyfulTurn
+                  </Text>
+                </Text>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -1712,6 +1736,43 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     color: '#000',
     fontSize: 13,
+    fontWeight: '800',
+  },
+  aboutCard: {
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    marginTop: spacing.xs,
+    gap: spacing.sm,
+  },
+  aboutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  versionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+  },
+  versionText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  aboutDivider: {
+    height: 1,
+    width: '100%',
+  },
+  aboutCreditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  aboutCreditLabel: {
+    fontSize: 12,
+  },
+  aboutCreditAuthor: {
     fontWeight: '800',
   },
 });

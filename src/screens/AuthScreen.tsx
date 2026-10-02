@@ -350,6 +350,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onClose, isMa
             </Text>
           </TouchableOpacity>
         )}
+
+        {/* Creator Attribution */}
+        <View style={styles.creditFooter}>
+          <Text style={[styles.creditFooterText, { color: theme.textMuted }]}>
+            {isTamil ? 'உருவாக்கியவர்' : 'Made by'}{' '}
+            <Text style={{ fontWeight: '700', color: theme.text }}>
+              Osborn Matthew | JoyfulTurn
+            </Text>
+          </Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -529,5 +539,13 @@ const styles = StyleSheet.create({
   removeUserBtn: {
     padding: 6,
     borderRadius: 6,
+  },
+  creditFooter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+  },
+  creditFooterText: {
+    fontSize: 11,
   },
 });

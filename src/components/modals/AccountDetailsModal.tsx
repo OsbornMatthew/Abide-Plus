@@ -248,6 +248,16 @@ export const AccountDetailsModal: React.FC<AccountDetailsModalProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
+
+            {/* App Attribution */}
+            <View style={styles.creditFooter}>
+              <Text style={[styles.creditFooterText, { color: theme.textMuted }]}>
+                Abide+ • {isTamil ? 'உருவாக்கியவர்' : 'Made by'}{' '}
+                <Text style={{ fontWeight: '700', color: theme.text }}>
+                  Osborn Matthew | JoyfulTurn
+                </Text>
+              </Text>
+            </View>
           </ScrollView>
         </View>
       </View>
@@ -465,5 +475,15 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 12.5,
     fontWeight: '800',
+  },
+  creditFooter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
+  creditFooterText: {
+    fontSize: 11,
+    textAlign: 'center',
   },
 });
